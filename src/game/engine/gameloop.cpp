@@ -172,7 +172,17 @@ void Debug_Motion_Capture()
 
 BOOL Main_Loop()
 {
-    if (GameActive) {
+    if (g_InMapEditor) {
+
+        if (g_gameInFocus) {
+            g_mouse->Erase_Mouse(g_hidPage, true);
+            Process_Input();
+            Map.Render();
+            Call_Back();
+            Color_Cycle();
+        }
+
+    } else if (GameActive) {
 
 #ifdef CHRONOSHIFT_DEBUG
 

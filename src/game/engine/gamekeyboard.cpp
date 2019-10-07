@@ -637,9 +637,31 @@ void Keyboard_Process(KeyNumType &key)
     KeyNumType justkey = (KeyNumType)(key & ~(KEY_SHIFT_BIT | KEY_CTRL_BIT | KEY_ALT_BIT | KEY_VK_BIT));
     KeyNumType keynum = (KeyNumType)(key & ~(KEY_VK_BIT));
 
-    if (justkey == Options.Get_KeyEditorToggle()) {
-        g_InMapEditor = !g_InMapEditor;
-        key = KN_NONE;
+    if (Session.Game_To_Play() == GAME_CAMPAIGN || Session.Game_To_Play() == GAME_SKIRMISH) {
+
+        if (justkey == Options.Get_KeyEditorToggle()) {
+            g_InMapEditor = !g_InMapEditor;
+
+            if ( g_InMapEditor ) {
+                g_Debug_Unshroud = true;
+                Unselect_All();
+                Map.Activate(1);
+                Map.Radar_Activate(3);
+                Map.Init_IO();
+                g_hidPage.Clear();
+                Map.Flag_To_Redraw(1);
+                Map.Render();
+            } else {
+                g_Debug_Unshroud = false;
+                Unselect_All();
+                Map.Init_IO();
+                g_hidPage.Clear();
+                Map.Flag_To_Redraw(1);
+                Map.Render();
+            }
+
+            key = KN_NONE;
+        }
     }
 
     if (g_InMapEditor) {
