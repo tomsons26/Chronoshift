@@ -31,6 +31,10 @@ public:
     void Set_Digest(const char *digest);
     void Set_Official(int official);
     void Set_Expansion(int expansion);
+
+    bool Is_Official() { return IsOfficial; }
+    bool Is_Expansion() { return IsExpansion; }
+
 private:
     char Description[44];
     char Filename[512];

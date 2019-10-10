@@ -165,10 +165,12 @@ public:
     BOOL Attraction_Allowed() const { return AllowAttract; }
     void Set_Allow_Attraction(BOOL onoff) { AllowAttract = onoff; }
     BOOL Super_Record_Game() const { return SuperRecord; }
+    void Set_Send_Scenario_Is_Official(bool official) { SendScenarioIsOfficial = official; }
 
     DynamicVectorClass<NodeNameTag *> &Games_List() { return Games; }
     DynamicVectorClass<NodeNameTag *> &Players_List() { return Players; }
     DynamicVectorClass<NodeNameTag *> &Network_Players_List() { return NetworkPlayers; }
+    DynamicVectorClass<MultiMission *> &MPlayer_Scenario_List() { return MPlayerScenarios; }
 
     BOOL Modem_Service() const { return ModemService; }
 

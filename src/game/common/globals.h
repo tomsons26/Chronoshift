@@ -32,6 +32,14 @@
 #define BUTTON_YES 3
 #define BUTTON_NO 4
 
+
+// Multiplayer Menu IDs
+#define BUTTON_MP_MODEM 100
+#define BUTTON_MP_SKIRMISH 101
+#define BUTTON_MP_NETWORK 102
+#define BUTTON_MP_INTERNET 103
+#define BUTTON_MP_CANCEL 104
+
 //
 // Ingame UI Gadget ID's
 //
