@@ -112,6 +112,7 @@ set(GAMEENGINE_SRC
     game/engine/multimission.cpp
     game/engine/missioncontrol.cpp
     game/engine/movie.cpp
+    game/engine/moviedlg.cpp
     game/engine/msglist.cpp
     game/engine/mzone.cpp
     game/engine/object.cpp

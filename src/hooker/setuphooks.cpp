@@ -89,6 +89,7 @@
 #include "shapebtn.h"
 #include "sidebar.h"
 #include "slider.h"
+#include "sndctrl.h"
 #include "super.h"
 #include "surfacemonitor.h"
 #include "team.h"
@@ -107,7 +108,7 @@
 #include "vortex.h"
 #include "wsa.h"
 #include "xordelta.h"
-#include "sndctrl.h"
+#include "moviedlg.h"
 #include <malloc.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -891,6 +892,9 @@ void Setup_Hooks()
     Hook_Function(0x0056AB08, *TerrainClass::Start_To_Crumble);
     Hook_Function(0x0056ABF0, *TerrainClass::Hook_Radar_Icon);
     Hook_Function(0x00550290, *SoundControlsClass::Process);
+
+    // replaces Load options menu for quick testing
+    Hook_Function(0x004FCEB4, *MovieControlsClass::Process);
 
 #endif
 }

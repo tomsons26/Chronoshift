@@ -37,6 +37,7 @@
 #include "session.h"
 #include "shape.h"
 #include "surfacemonitor.h"
+#include "moviedlg.h"
 #include "textprint.h"
 #include "theme.h"
 #include <cstdio>
@@ -218,6 +219,10 @@ void Init_Secondary_Mixfiles()
         MoviesMix = new GameMixFile("movies1.mix", &g_publicKey);
     } else {
         MoviesMix = new GameMixFile("movies2.mix", &g_publicKey);
+    }
+
+    if (MoviesMix != nullptr) {
+        MovieChoiceClass::Scan();
     }
 
     ScoreMix = new GameMixFile("scores.mix", &g_publicKey);
