@@ -72,6 +72,7 @@ set(GAMEENGINE_SRC
     game/engine/door.cpp
     game/engine/drive.cpp
     game/engine/expansion.cpp
+    game/engine/expansiondlg.cpp
     game/engine/facing.cpp
     game/engine/factory.cpp
     game/engine/flasher.cpp

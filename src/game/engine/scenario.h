@@ -83,9 +83,15 @@ public:
     BOOL Global_Timer_Running() { return GlobalTimer != 0; }
     TCountDownTimerClass<FrameTimerClass> &Some_Timer() { return SomeTimer; }
     int Get_Scenario_Index() const { return ScenarioIndex; }
+    void Set_Scenario_Index(int index) { ScenarioIndex = index; }
     TheaterType Get_Theater() const { return Theater; }
     void Set_Theater(TheaterType theater) { Theater = theater; }
     const char *Scenario_Name() const { return ScenarioName; }
+    void Set_Scenario_Index_And_Name(int index, const char *name)
+    {
+        ScenarioIndex = index;
+        strcpy(ScenarioName, name);
+    }
     const char *Scenario_Description() const { return ScenarioDescription; }
     cell_t Get_Waypoint(int waypoint_num) const { return Waypoints[waypoint_num]; }
     void Set_Waypoint(int waypoint_num, cell_t cell) { Waypoints[waypoint_num] = cell; }

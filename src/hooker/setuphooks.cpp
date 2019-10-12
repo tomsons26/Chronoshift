@@ -113,6 +113,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern int Expansion_Dialog3(int);
+
 void Setup_Hooks()
 {
 #ifdef __WATCOMC__
@@ -892,6 +894,7 @@ void Setup_Hooks()
     Hook_Function(0x0056ABF0, *TerrainClass::Hook_Radar_Icon);
     Hook_Function(0x00550290, *SoundControlsClass::Process);
 
+    Hook_Function(0x004BE360, *Expansion_Dialog3);
 #endif
 }
 
