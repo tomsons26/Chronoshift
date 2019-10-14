@@ -38,6 +38,7 @@ public:
     virtual void Read_INI(GameINIClass &ini) override;
     virtual BOOL Scroll_Map(DirType dir, int &distance, BOOL redraw = true) override;
     virtual void Write_INI(GameINIClass &ini) override;
+    MapEditorClass *Hook_Ctor() { return new (this) MapEditorClass(); }
 
 protected:
     // NOTE: All members for this class must be static otherwise it

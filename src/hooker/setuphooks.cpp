@@ -892,6 +892,10 @@ void Setup_Hooks()
     Hook_Function(0x0056ABF0, *TerrainClass::Hook_Radar_Icon);
     Hook_Function(0x00550290, *SoundControlsClass::Process);
 
+    Hook_Function(0x0050301C, *MapEditorClass::Hook_Ctor);
+    Hook_Call(0x004F78E5, *MapEditorClass::One_Time);
+    Hook_Call(0x00538748, *MapEditorClass::Init_IO);
+
 #endif
 }
 
