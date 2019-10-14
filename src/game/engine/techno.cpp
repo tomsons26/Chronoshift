@@ -532,9 +532,43 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass *radio, RadioMessageTyp
     return RadioMessageType();
 }
 
+/**
+ * @brief
+ *
+ * @address 0x005612F8
+ */
 BOOL TechnoClass::Revealed(HouseClass *house)
 {
-    return 0;
+    if (house == g_PlayerPtr && m_PlayerAware) {
+        return false;
+    }
+    if (house != g_PlayerPtr) {
+        if (m_AIAware) {
+            return false;
+        }
+        m_AIAware = true;
+    }
+    if (!ObjectClass::Revealed(house)) {
+        return false;
+    }
+    if (house == g_PlayerPtr) {
+        m_PlayerAware = true;
+        if (m_PlayerOwned) {
+            Look();
+            return true;
+        }
+        /*
+        //ambiguous function on m_AttachedTrigger
+        if (ScenarioInit == 0 && m_AttachedTrigger != nullptr) {
+            // TODO
+            // m_AttachedTrigger->Spring(TEVENT_DISCOVERED_BY_PLAYER, this, ??, 0);
+        }*/
+
+        m_OwnerHouse->Set_Visionary(true);
+        return true;
+    }
+    m_AIAware = true;
+    return true;
 }
 
 /**
@@ -642,9 +676,27 @@ DirType TechnoClass::Fire_Direction() const
     return Turret_Facing();
 }
 
+/**
+ * @brief
+ *
+ * @address 0x00567498
+ */
 InfantryType TechnoClass::Crew_Type() const
 {
-    return InfantryType();
+    if (!Techno_Class_Of().Is_Crewed()) {
+        return INFANTRY_NONE;
+    }
+    if (m_OwnerHouse->Acts_Like() == HOUSES_NEUTRAL) {
+        return (InfantryType)Scen.Get_Random_Value(INFANTRY_C1, INFANTRY_C9);
+    }
+    if (Techno_Class_Of().Get_Weapon(WEAPON_SLOT_PRIMARY) != nullptr && Scen.Get_Random_Value(0, 99) < 15) {
+        if (Scen.Get_Random_Value(0, 99) < 50) {
+            return INFANTRY_C1;
+        } else {
+            return INFANTRY_C7;
+        }
+    }
+    return INFANTRY_E1;
 }
 
 /**
@@ -667,19 +719,58 @@ BOOL TechnoClass::Is_Weapon_Equipped() const
     return Techno_Class_Of().Get_Weapon(WEAPON_SLOT_PRIMARY) != nullptr;
 }
 
-int TechnoClass::Rearm_Delay(int a1, int a2) const
+/**
+ * @brief
+ *
+ * @address 0x00565010
+ */
+int TechnoClass::Rearm_Delay(int a1, WeaponSlotType weapon) const
 {
-    return 0;
+    if (What_Am_I() == RTTI_BUILDING && m_Ammo > 1) {
+        return 1;
+    }
+    const WeaponTypeClass *wptr = Techno_Class_Of().Get_Weapon(weapon);
+    if (a1 && wptr != nullptr) {
+        return m_OwnerHouse->Get_ROF_Multiplier() * wptr->Get_ROF();
+    }
+    return 3;
 }
 
+/**
+ * @brief
+ *
+ * @address 0x00569234
+ */
 int TechnoClass::Refund_Amount() const
 {
-    return 0;
+    int cost = m_OwnerHouse->Get_Cost_Multiplier() * Techno_Class_Of().Raw_Cost();
+    if (m_OwnerHouse->Is_Human()){
+        cost = Rule.Refund_Percent() * cost;
+    }
+    return cost;
 }
 
+/**
+ * @brief
+ *
+ * @address 0x00567648
+ */
 int TechnoClass::Threat_Range(int a1) const
 {
-    return 0;
+    if (a1 == -1) {
+        return -1;
+    }
+    int range = Techno_Class_Of().Get_Guard_Range();
+    if (a1 == 0) {
+        if (range > 0) {
+            return range;
+        }
+        return 0;
+    }
+    if (range == 0) {
+        range = std::max(Weapon_Range(WEAPON_SLOT_PRIMARY), Weapon_Range(WEAPON_SLOT_SECONDARY));
+    }
+    return std::clamp(2 * range, 0, 2560);
 }
 
 /**
@@ -726,9 +817,26 @@ int TechnoClass::Made_A_Kill()
     return ++m_KillCount;
 }
 
+/**
+ * @brief
+ *
+ * @address 0x00568610
+ */
 BOOL TechnoClass::Target_Something_Nearby(ThreatType threat)
 {
-    return 0;
+    ThreatType thrt = threat & THREAT_1 | THREAT_2;
+    if (m_TarCom == 0) {
+        if (thrt & THREAT_1) {
+            //TODO
+            /*if (In_Range(m_TarCom, What_Weapon_Should_I_Use(m_TarCom)) {
+                Assign_Target(0);
+            }*/
+        }
+    }
+    if (m_TarCom == 0) {
+        Assign_Target(Greatest_Threat(thrt));
+    }
+    return m_TarCom != 0;
 }
 
 /**
@@ -1030,6 +1138,11 @@ void TechnoClass::Techno_Draw_Object(
     }
 }
 
+/**
+ * @brief
+ *
+ * @address 0x005692CC
+ */
 int TechnoClass::Anti_Air()
 {
     if (!Is_Weapon_Equipped()) {
@@ -1037,13 +1150,13 @@ int TechnoClass::Anti_Air()
     }
 
     const TechnoTypeClass &tech_type = reinterpret_cast<const TechnoTypeClass &>(Class_Of());
-    WeaponTypeClass *weapon = tech_type.Get_Weapon(WEAPON_SLOT_PRIMARY);
+    const WeaponTypeClass *weapon = tech_type.Get_Weapon(WEAPON_SLOT_PRIMARY);
 
     if (!weapon->Get_Projectile()->Is_Anti_Air()) {
         return 0;
     }
 
-    int effectiveness = weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_LIGHT) * weapon->Get_Range();
+    int effectiveness = (weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_LIGHT) * weapon->Get_Range()) / weapon->Get_ROF();
 
     if (tech_type.Is_Two_Shooter()) {
         effectiveness *= 2;
@@ -1052,6 +1165,11 @@ int TechnoClass::Anti_Air()
     return effectiveness / 50;
 }
 
+/**
+ * @brief
+ *
+ * @address 0x0056935C
+ */
 int TechnoClass::Anti_Armor()
 {
     if (!Is_Weapon_Equipped()) {
@@ -1059,15 +1177,15 @@ int TechnoClass::Anti_Armor()
     }
 
     const TechnoTypeClass &tech_type = reinterpret_cast<const TechnoTypeClass &>(Class_Of());
-    WeaponTypeClass *weapon = tech_type.Get_Weapon(WEAPON_SLOT_PRIMARY);
+    const WeaponTypeClass *weapon = tech_type.Get_Weapon(WEAPON_SLOT_PRIMARY);
 
     if (!weapon->Get_Projectile()->Is_Anti_Ground()) {
         return 0;
     }
 
     lepton_t range = min<lepton_t>(weapon->Get_Range(), 1024);
-    int effectiveness = weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_HEAVY) * range
-        * weapon->Get_Warhead()->Get_Spread() / weapon->Get_ROF();
+    int effectiveness = weapon->Get_Warhead()->Get_Spread()
+        * (weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_HEAVY)) * range / weapon->Get_ROF();
 
     if (tech_type.Is_Two_Shooter()) {
         effectiveness *= 2;
@@ -1080,6 +1198,11 @@ int TechnoClass::Anti_Armor()
     return effectiveness / 50;
 }
 
+/**
+ * @brief
+ *
+ * @address 0x00569434
+ */
 int TechnoClass::Anti_Infantry()
 {
     if (!Is_Weapon_Equipped()) {
@@ -1087,15 +1210,15 @@ int TechnoClass::Anti_Infantry()
     }
 
     const TechnoTypeClass &tech_type = reinterpret_cast<const TechnoTypeClass &>(Class_Of());
-    WeaponTypeClass *weapon = tech_type.Get_Weapon(WEAPON_SLOT_PRIMARY);
+    const WeaponTypeClass *weapon = tech_type.Get_Weapon(WEAPON_SLOT_PRIMARY);
 
     if (!weapon->Get_Projectile()->Is_Anti_Ground()) {
         return 0;
     }
 
     lepton_t range = min<lepton_t>(weapon->Get_Range(), 1024);
-    int effectiveness = weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_NONE) * range
-        * weapon->Get_Warhead()->Get_Spread() / weapon->Get_ROF();
+    int effectiveness = weapon->Get_Warhead()->Get_Spread()
+        * (weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_NONE)) * range / weapon->Get_ROF();
 
     if (tech_type.Is_Two_Shooter()) {
         effectiveness *= 2;

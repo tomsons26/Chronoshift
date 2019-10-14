@@ -20,6 +20,7 @@
 #include "gamedebug.h"
 #include "mixfile.h"
 #include "iomap.h"
+#include "tileset.h"
 #include <algorithm>
 
 #ifndef GAME_DLL
@@ -584,11 +585,6 @@ ObjectClass *TemplateTypeClass::Create_One_Of(HouseClass *house) const
 
 LandType TemplateTypeClass::Land_Type(int sub_icon) const
 {
-    // TODO requires IconControlType
-#ifdef GAME_DLL
-    LandType(*func)(const TemplateTypeClass*, int) = reinterpret_cast<LandType(*)(const TemplateTypeClass*, int)>(0x0049E98C);
-    return func(this, sub_icon);
-#elif 0
     // I think it works like this, the enum entries are the index into _land
     // which matches the Template _LandType to th actual LandType type.
     enum TemplateLandType
@@ -621,20 +617,16 @@ LandType TemplateTypeClass::Land_Type(int sub_icon) const
         LAND_CLEAR, LAND_CLEAR, LAND_ROUGH, LAND_CLEAR
     };
 
-    IconControlType *icon = (IconControlType *)ImageData;
+    IconControlType *icon = (IconControlType *)m_ImageData;
     char *cmaps = nullptr;
 
     //accesses the raw image data of the template and get the _landtype.
     //Realistically, the assignment probably won't fail as its just a spot of
     //pointer arithmetic on a pointer we already checked wasn't NULL
-    if (ImageData != nullptr && (cmaps = (char *)icon + icon->ColorMap) != nullptr) {
-        return _land[cmaps[sub_icon % icon->MapWidth * icon->MapHeight]];
+    if (icon != nullptr && (cmaps = (char *)icon + icon->ra.color_map) != nullptr) {
+        return _land[cmaps[sub_icon % icon->ra.map_width * icon->ra.map_height]];
     }
-
-    return LAND_NONE;
-#else
-    return LAND_NONE;
-#endif
+    return LAND_CLEAR;
 }
 
 TemplateType TemplateTypeClass::From_Name(const char *name)

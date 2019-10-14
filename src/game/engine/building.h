@@ -23,6 +23,13 @@
 #include "factory.h"
 #include "techno.h"
 
+enum CheckPointType
+{
+    CHECKPOINT_0,
+    CHECKPOINT_1,
+    CHECKPOINT_2,
+};
+
 class BuildingClass : public TechnoClass
 {
 public:
@@ -41,6 +48,9 @@ public:
 
     // TechnoClass
     virtual void Death_Announcement(TechnoClass *killer) const final;
+    virtual void Enter_Idle_Mode(BOOL a1 = false) final;
+
+    cell_t Check_Point(CheckPointType check) const;
 
     BuildingType What_Type() const { return m_Class->What_Type(); }
 

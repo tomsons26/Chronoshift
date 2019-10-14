@@ -35,7 +35,7 @@ public:
     BOOL Read_INI(GameINIClass &ini);
     void Write_INI(GameINIClass &ini);
 
-private:
+public:
     MissionType Mission; // The mission we control.
 #ifndef CHRONOSHIFT_NO_BITFIELDS
     BOOL NoThreat : 1;

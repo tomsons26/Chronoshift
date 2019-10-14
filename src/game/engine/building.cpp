@@ -65,6 +65,26 @@ void BuildingClass::Death_Announcement(TechnoClass *killer) const
 /**
  *
  *
+ * @address 0x0045DD94
+ */
+void BuildingClass::Enter_Idle_Mode(BOOL a1)
+{
+    MissionType mission;
+    if ( !a1 || ScenarioInit || g_InMapEditor )
+    {
+        //BuildingClass::Begin_Mode(BSTATE_1);
+        mission = MISSION_GUARD;
+    } else {
+        //BuildingClass::Begin_Mode(BSTATE_0);
+        mission = MISSION_CONSTRUCTION;
+    }
+    Assign_Mission(mission);
+>>>>>>> Implements various small/simple functions.
+}
+
+/**
+ *
+ *
  * @address 0x0045EAC0
  */
 BOOL BuildingClass::Can_Player_Move() const
@@ -132,4 +152,36 @@ void *BuildingClass::Get_Image_Data() const
         return Class_Of().Get_Buildup_Data();
     }
     return ObjectClass::Get_Image_Data();
+}
+
+/**
+ *
+ *
+ * @address 0x0045EB90
+ */
+cell_t BuildingClass::Check_Point(CheckPointType check) const
+{
+    cell_t xoff = 6;
+    cell_t yoff = 5;
+    switch (check) {
+        case CHECKPOINT_0:
+            xoff = 0;
+            break;
+        case CHECKPOINT_2:
+            yoff = 0;
+            break;
+        case CHECKPOINT_1:
+        default:
+            break;
+    };
+
+    cell_t cellnum = Center_Cell();
+    if ((Map.Get_Map_Cell_Width() / 2) < (Cell_Get_X(cellnum) - Map.Get_Map_Cell_X())) {
+        xoff = -xoff;
+    }
+    if ((Map.Get_Map_Cell_Height() / 2) < (Cell_Get_Y(cellnum) - Map.Get_Map_Cell_Y())) {
+        yoff = -yoff;
+    }
+    return Cell_From_XY(xoff + Cell_Get_X(cellnum), yoff + Cell_Get_Y(cellnum));
+>>>>>>> Implements various small/simple functions.
 }

@@ -20,6 +20,7 @@
 #include "coord.h"
 #include "globals.h"
 #include "rules.h"
+#include "team.h"
 #include <cstdio>
 
 #define TRANSPORT_DOOR_DELAY 5
@@ -101,15 +102,42 @@ void VesselClass::operator delete(void *ptr)
 
 MoveType VesselClass::Can_Enter_Cell(cell_t cellnum, FacingType facing) const
 {
-    DEBUG_ASSERT(m_IsActive);
+    if (cellnum >= MAP_MAX_AREA) {
+        return MOVE_NO;
+    }
 
-#ifdef GAME_DLL
-    MoveType const (*func)(const VesselClass *, cell_t, FacingType) = reinterpret_cast<MoveType const (*)(const VesselClass *, cell_t, FacingType)>(0x00589ECC);
-    return func(this, cellnum, facing);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function called!\n");
-    return MOVE_NONE;
-#endif
+    if (!ScenarioInit && !Map.In_Radar(cellnum) && !Is_Allowed_To_Leave_Map()) {
+        return MOVE_NO;
+    }
+
+    CellClass &cell = Map[cellnum];
+    if (cell.Cell_Terrain()) {
+        return MOVE_NO;
+    }
+    //TODO
+    if (Ground[cell.Get_Land()].Speeds[m_Class->Get_Speed()] == fixed_t(0, 0)) { // does it get MPH or Speed?
+        return MOVE_NO;
+    }
+
+    if (!cell.All_Spots_Free()) {
+        return MOVE_OK;
+    }
+    
+    if (cell.Is_Spot_Occupied(OCCUPANT_BUILDING)) {
+        return MOVE_NO;
+    }
+
+    TechnoClass *tptr = cell.Cell_Techno();
+    if (tptr != nullptr && tptr->Cloak_State() == CLOAK_CLOAKED) {
+        if (Get_Owner_House()->Is_Ally(tptr)) {
+            return MOVE_CLOAK;
+        }
+    }
+
+    if (cell.Is_Spot_Occupied(OCCUPANT_UNIT)) {
+        return MOVE_MOVING_BLOCK;
+    }
+    return MOVE_OK;
 }
 
 void VesselClass::AI()
@@ -461,18 +489,11 @@ void VesselClass::Enter_Idle_Mode(BOOL a1)
 
 BOOL VesselClass::Start_Driver(coord_t &dest)
 {
-    DEBUG_ASSERT(m_IsActive);
-
-#ifdef GAME_DLL
-    BOOL (*func)(VesselClass *, coord_t &) = reinterpret_cast<BOOL (*)(VesselClass *, coord_t &)>(0x0058CC9C);
-    return func(this, dest);
-#else
     if (DriveClass::Start_Driver(dest) && m_IsActive) {
         Mark_Track(dest, MARK_PUT);
         return true;
     }
     return false;
-#endif
 }
 
 int VesselClass::Shape_Number() const
@@ -557,27 +578,19 @@ void VesselClass::Repair_AI()
 
 BOOL VesselClass::Edge_Of_World_AI()
 {
-    DEBUG_ASSERT(m_IsActive);
-
-#ifdef GAME_DLL
-    BOOL (*func)(VesselClass *) = reinterpret_cast<BOOL (*)(VesselClass *)>(0x0058D14C);
-    return func(this);
-#else
     if (m_Moving || Map.In_Radar(Get_Cell()) || !m_LockedOnMap) {
         return false;
     }
 
-    // TODO: Requires TeamClass.
-    /*if (m_Team != nullptr) {
-        m_Team->Bit2_4 = true;
-    }*/
+    if (m_Team != nullptr) {
+        m_Team->Set_Bit2_4(true);
+    }
 
     Stun();
 
     delete this;
 
     return true;
-#endif
 }
 
 void VesselClass::Transport_Open_Door()
