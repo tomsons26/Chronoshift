@@ -157,6 +157,7 @@ void MapEditorClass::Init_IO()
 {
     DEBUG_LOG("Entered MapEditorClass::Init_IO\n");
     GameMouseClass::Init_IO();
+    rightclickmenu.Zap();
     Add_A_Button(rightclickmenu);
 }
 
