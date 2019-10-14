@@ -1656,22 +1656,37 @@ ProdFailType HouseClass::Begin_Production(RTTIType rtti, int a2)
 
 ProdFailType HouseClass::Suspend_Production(RTTIType rtti)
 {
-#ifdef GAME_DLL
-    ProdFailType (*func)(HouseClass *, RTTIType) = reinterpret_cast<ProdFailType (*)(HouseClass *, RTTIType)>(0x004D66D0);
-    return func(this, rtti);
-#else
-    return ProdFailType();
-#endif
+    FactoryClass *fptr = Fetch_Factory(rtti);
+    if (fptr == nullptr) {
+        return PROD_REJECTED;
+    }
+    fptr->Suspend();
+    if (this == g_PlayerPtr) {
+        Map.Flag_Sidebar_To_Redraw();
+        Map.Flag_To_Redraw();
+    }
+    return PROD_APPROVED;
 }
 
 ProdFailType HouseClass::Abandon_Production(RTTIType rtti)
 { 
-#ifdef GAME_DLL
-    ProdFailType (*func)(HouseClass *, RTTIType) = reinterpret_cast<ProdFailType (*)(HouseClass *, RTTIType)>(0x004D671C);
-    return func(this, rtti);
-#else
-    return ProdFailType();
-#endif
+    FactoryClass *fptr = Fetch_Factory(rtti);
+    if (fptr == nullptr) {
+        return PROD_REJECTED;
+    }
+    if (this == g_PlayerPtr) {
+        if (rtti == RTTI_BUILDINGTYPE || rtti == RTTI_BUILDING) {
+            Map.Abandon_Production(rtti, fptr->Get_Heap_ID());
+            Map.Reset_Pending_Object(false);
+            Map.Set_Cursor_Shape();
+        }
+    }
+    fptr->Abandon();
+    Set_Factory(rtti, nullptr);
+    if (fptr != nullptr) {
+        delete fptr;
+    }
+    return PROD_APPROVED;
 }
 
 void HouseClass::Production_Begun(TechnoClass *object)

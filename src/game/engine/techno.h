@@ -119,7 +119,7 @@ public:
     virtual BOOL Is_Weapon_Equipped() const;
     virtual fixed_t Ore_Load() const { return fixed_t::_0_1; }
     virtual int Pip_Count() const { return 0; }
-    virtual int Rearm_Delay(int a1, int a2) const;
+    virtual int Rearm_Delay(int a1, WeaponSlotType weapon = WEAPON_SLOT_PRIMARY) const;
     virtual int Refund_Amount() const;
     virtual int Risk() const { return Techno_Class_Of().Get_ThreatPosed(); }
     virtual int Threat_Range(int a1) const;
@@ -144,8 +144,8 @@ public:
     virtual void Draw_Pips(int x, int y, WindowNumberType window) const;
     virtual void Do_Uncloak();
     virtual void Do_Cloak();
-    virtual bool Is_Ready_To_Random_Animate() const;
-    virtual bool Random_Animate();
+    virtual BOOL Is_Ready_To_Random_Animate() const;
+    virtual BOOL Random_Animate();
     virtual void Assign_Destination(target_t dest);
     virtual void Enter_Idle_Mode(BOOL a1 = false);
 

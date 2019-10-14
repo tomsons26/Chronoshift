@@ -243,6 +243,7 @@ public:
     void Set_Map_Clear(BOOL value) { m_MapIsClear = value; }
     int Get_Current_IQ() const { return m_CurrentIQ; }
     void Set_IQ_Level(int value) { m_CurrentIQ = value; }
+    void Set_Visionary(int value) { m_Visionary = value; }
     SuperClass &Special_Weapons(SpecialWeaponType type) { return m_Specials[type]; }
     int Currently_Owned_Unit_Count() const { return m_CurrentUnitCount; }
     int Currently_Owned_Building_Count() const { return m_CurrentBuildingCount; }

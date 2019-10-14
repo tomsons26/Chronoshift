@@ -294,10 +294,6 @@ const int16_t *BuildingTypeClass::Overlap_List() const
  */
 int BuildingTypeClass::Raw_Cost() const
 {
-#ifdef GAME_DLL
-    int (*func)(const BuildingTypeClass *) = reinterpret_cast<int (*)(const BuildingTypeClass *)>(0x00453C70);
-    return func(this);
-#elif 0
     int cost = TechnoTypeClass::Raw_Cost();
 
     switch (m_Type) {
@@ -306,7 +302,8 @@ int BuildingTypeClass::Raw_Cost() const
             break;
 
         case BUILDING_HELIPAD:
-            if (Rule.Separate_Aircraft()) {
+            if (!Rule.Separate_Aircraft()) {
+                // TODO investigate why this is like this if you can just have cost -= AIRCRAFT_HIND.Get_Cost...
                 cost -= (AircraftTypeClass::As_Reference(AIRCRAFT_HIND).Get_Cost()
                         + AircraftTypeClass::As_Reference(AIRCRAFT_HIND).Get_Cost()) / 2;
             }
@@ -318,9 +315,6 @@ int BuildingTypeClass::Raw_Cost() const
     };
 
     return cost;
-#else 
-    return 0;
-#endif
 }
 
 /**

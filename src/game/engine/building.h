@@ -33,9 +33,12 @@ public:
 
     // ObjectClass
     virtual const BuildingTypeClass &Class_Of() const override;
+    virtual void Detach(target_t target, int a2) override;
+    virtual void Fire_Out() override {}
 
     // TechnoClass
     virtual void Death_Announcement(TechnoClass *killer) const override;
+    virtual void Enter_Idle_Mode(BOOL a1 = false) override;
 
     BuildingType What_Type() const { return m_Class->What_Type(); }
 
