@@ -76,6 +76,10 @@ public:
     BOOL Is_Crater() { return Crater; }
     BOOL Is_Bib() { return Bib; }
 
+    SmudgeType Get_Type() const { return Type; }
+    int Get_Width() const { return Width; }
+    int Get_Height() const { return Height; }
+
     static void Init_Heap();
     static void One_Time() {}
     static void Init(TheaterType theater);

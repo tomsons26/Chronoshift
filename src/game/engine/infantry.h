@@ -48,6 +48,9 @@ class InfantryClass : public FootClass
 
     InfantryType What_Type() const { return m_Class->What_Type(); }
 
+    static void Read_INI(GameINIClass &ini);
+    static void Write_INI(GameINIClass &ini);
+
 private:
     GamePtr<InfantryTypeClass> m_Class;
     DoType m_Doing;

@@ -124,6 +124,9 @@ public:
 
     static TeamTypeClass *Suggested_New_Team(HouseClass *house, long, long, long, long, int);
 
+    static void Read_INI(GameINIClass &ini);
+    static void Write_INI(GameINIClass &ini);
+
 protected:
 #ifndef CHRONOSHIFT_NO_BITFIELDS
     BOOL m_IsActive : 1; // 1
@@ -134,7 +137,7 @@ protected:
     BOOL m_Reinforce : 1; // 32
 #else
     bool m_IsActive;
-    bool m_AvoidThreats; // Always take the safest route, even if it’s a detour.
+    bool m_AvoidThreats; // Always take the safest route, even if itâ€™s a detour.
     bool m_Suicide; // Charge at target ignoring enemy units/enemy fire.
     bool m_Autocreate; // Team is only used by autocreate AI (produced taskforces).
     bool m_Prebuild; // Prebuild team members before creating.

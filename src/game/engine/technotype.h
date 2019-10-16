@@ -57,6 +57,7 @@ public:
     BOOL Is_Two_Shooter() const;
     BOOL Legal_Placement(cell_t cellnum) const;
     BOOL Is_Nominal() const { return IsNominal; }
+    BOOL Is_Theater() const { return IsTheater; }
     int Get_ThreatPosed() const { return ThreatPosed; }
     BOOL Is_Invisible() const { return IsInvisible; }
     BOOL Is_Cloakable() const { return Cloakable; }
@@ -64,6 +65,7 @@ public:
     int Get_Cost() const { return Cost; }
     SpeedType Get_Speed() const { return Speed; }
     int Get_Ammo() const { return Ammo; }
+    int Get_ROTCount() const { return ROTCount; }
     RemapType Get_Remap() const { return Remap; }
     int Get_Sight() const { return Sight; }
     int Get_TechLevel() const { return TechLevel; }

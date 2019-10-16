@@ -390,3 +390,13 @@ BOOL UnitClass::Ok_To_Move(DirType dir)
     return false;
 #endif
 }
+
+void UnitClass::Write_INI(GameINIClass &ini)
+{
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x00581298);
+    return func(ini);
+#else
+
+#endif
+}

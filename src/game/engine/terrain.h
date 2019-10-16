@@ -66,6 +66,9 @@ public:
     TerrainType What_Type() const { return m_Class->Get_Type(); }
     uint8_t *const Radar_Icon(short cellnum) const;
 
+    static void Read_INI(GameINIClass &ini);
+    static void Write_INI(GameINIClass &ini);
+
 private:
     bool Theater_Allowed() const { return ((1 << Scen.Get_Theater()) & m_Class->Get_Theater()); }
     void Start_To_Crumble();

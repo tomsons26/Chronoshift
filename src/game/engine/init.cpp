@@ -282,7 +282,7 @@ void Init_Keys()
         "[PrivateKey]\n1=AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB\n\n";
     RAMFileClass mem_keys(Keys, strlen(Keys));
     GameINIClass tempini;
-    tempini.Load(mem_keys);
+    tempini.Load(mem_keys, false);
     g_publicKey = tempini.Get_PKey(true);
     g_privateKey = tempini.Get_PKey(false); // Private key is only used to write mix files.
 }

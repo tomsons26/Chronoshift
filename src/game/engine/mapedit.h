@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * @author CCHyper
+ * @author tomsons26
  *
  * @brief Part of IOMap stack handling the map editor interface.
  *
@@ -20,6 +20,11 @@
 #include "always.h"
 #include "gmouse.h"
 #include "scenario.h"
+#include "textbtn.h"
+#include "list.h"
+#include "txtlabel.h"
+#include "dial8.h"
+#include "trigauge.h"
 
 class NoInitClass;
 class TechnoTypeClass;
@@ -43,6 +48,11 @@ public:
 
     BOOL Add_To_List(ObjectTypeClass *objecttype);
     static void Toggle_Editor_Mode(BOOL editor_mode);
+    static void Spec(int);
+
+#ifdef GAME_DLL
+    MapEditClass *Hook_Ctor() { return new (this) MapEditClass(); }
+#endif
 
 private:
     BOOL New_Scenario();
@@ -92,6 +102,38 @@ private:
 protected:
     // NOTE: All members for this class must be static otherwise it
     //       it will break the existing MapIO we hook into in RA!
+    struct Struct
+    {
+        ObjectTypeClass *m_ObjectTypeList[601]; // pointers to all placeable object types
+        int m_TotalObjectCount; // total object count in all categories
+        int m_CurrentEntry; // current ObjectTypeList entry
+        HousesType m_CurrentOwner; // current owner of current and to be placed objects
+        ObjectClass *m_GrabbedObject; // currently picked up object
+        cell_t m_GrabbedObjectCell; // cell the object was picked up from
+        int m_UpdateRate; // rate at which various draw routines are executed and various data is captured
+        int m_CategoryCounts[9]; // number of objects per category
+        int m_CurrentIndex[9]; // currently selected object in a category
+        TriggerTypeClass *m_TriggerType; // trigger currently being edited
+        TeamTypeClass *m_TeamType; // team currently being edited
+        BOOL m_UnsavedChanges;
+        BOOL m_Bit2;
+        BOOL m_BaseBuilding;
+        int m_BasePercent;
+        ListClass *m_HouseTypeList;
+        ListClass *m_MissionList;
+        TriColorGaugeClass *m_HealthBarGauge;
+        Dial8Class *m_FacingDial;
+        ControlClass *m_InputHandler;
+        TextLabelClass *m_HealthLabel;
+        TextButtonClass *m_SellableButton;
+        TextButtonClass *m_RebuildButton;
+        GaugeClass *m_BaseGauge;
+        TextLabelClass *m_BaseLabel;
+    };
+
+    static Struct c;
+    static char HealthBuf[20];
+    static MissionType MapEditMissions[9];
 };
 
 #endif // MAPEDIT_H

@@ -65,7 +65,7 @@ class TriggerTypeClass : public AbstractTypeClass
 public:
     TriggerTypeClass();
     TriggerTypeClass(const NoInitClass &noinit) : AbstractTypeClass(noinit) {}
-    ~TriggerTypeClass() {}
+    virtual ~TriggerTypeClass() {}
 
     void Code_Pointers();
     void Decode_Pointers();
@@ -83,6 +83,11 @@ public:
 
     static TriggerTypeClass &As_Reference(TriggerType trigger);
     static TriggerTypeClass *As_Pointer(TriggerType trigger);
+
+    static void Read_INI(GameINIClass &ini);
+    static void Write_INI(GameINIClass &ini);
+
+    int Edit();
 
 protected:
 #ifndef CHRONOSHIFT_NO_BITFIELDS

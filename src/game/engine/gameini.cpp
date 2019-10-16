@@ -16,6 +16,8 @@
 #include "gameini.h"
 #include "crc.h"
 #include "shapipe.h"
+#include "filepipe.h"
+#include "filestraw.h"
 #include <algorithm>
 
 GameINIClass::GameINIClass() :
@@ -889,4 +891,28 @@ int32_t const GameINIClass::Get_Unique_ID()
         Calculate_Message_Digest();
     }
     return Calculate_CRC(&Digest, sizeof(Digest));
+}
+
+int GameINIClass::Load(FileClass &file, BOOL check_digest)
+{
+    FileStraw fstraw(file);
+    return GameINIClass::Load(fstraw, check_digest);
+}
+
+int GameINIClass::Load(Straw &straw, BOOL check_digest)
+{
+    DEFINE_CALL(func, 0x00462F8C, int, GameINIClass *, Straw &, BOOL);
+    return func(this, straw, check_digest);
+}
+
+int GameINIClass::Save(FileClass &file, BOOL write_digest)
+{
+    FilePipe fpipe(file);
+    return GameINIClass::Save(fpipe, write_digest);
+}
+
+int GameINIClass::Save(Pipe &pipe, BOOL write_digest)
+{
+    DEFINE_CALL(func, 0x00463048, int, GameINIClass *, Pipe &, BOOL);
+    return func(this, pipe, write_digest);
 }

@@ -83,6 +83,11 @@ public:
 
     UnitType What_Type() const { return m_Class->What_Type(); }
 
+    FacingClass &Get_Turret_Facing() { return m_TurretFacing; }
+
+    static void Read_INI(GameINIClass &ini);
+    static void Write_INI(GameINIClass &ini);
+
 private:
     GamePtr<UnitTypeClass> m_Class;
     HousesType m_FlagOwner;

@@ -14,23 +14,24 @@
  *            LICENSE
  */
 #include "object.h"
-#include "coord.h"
-#include "iomap.h"
-#include "rules.h"
-#include "logic.h"
-#include "techno.h"
-#include "house.h"
-#include "globals.h"
-#include "session.h"
 #include "anim.h"
-#include "special.h"
-#include "tracker.h"
+#include "coord.h"
 #include "foot.h"
+#include "globals.h"
+#include "house.h"
+#include "iomap.h"
+#include "logic.h"
+#include "rules.h"
+#include "session.h"
+#include "special.h"
 #include "target.h"
+#include "techno.h"
+#include "tracker.h"
 #include <algorithm>
 
+
 #ifndef GAME_DLL
-DynamicVectorClass<ObjectClass*> CurrentObjects;
+DynamicVectorClass<ObjectClass *> CurrentObjects;
 #endif
 
 ObjectClass::ObjectClass() :
@@ -182,7 +183,7 @@ BOOL ObjectClass::Limbo()
 BOOL ObjectClass::Unlimbo(coord_t coord, DirType dir)
 {
 #ifdef GAME_DLL
-    BOOL (*func)
+    BOOL(*func)
     (ObjectClass *, coord_t, DirType) = reinterpret_cast<BOOL (*)(ObjectClass *, coord_t, DirType)>(0x0051DE9C);
     return func(this, coord, dir);
 #else
@@ -190,7 +191,6 @@ BOOL ObjectClass::Unlimbo(coord_t coord, DirType dir)
     cell_t cell = Coord_To_Cell(coord);
 
     if (GameActive && m_InLimbo && !m_IsDown && (ScenarioInit || Can_Enter_Cell(cell) == MOVE_OK)) {
-
         m_InLimbo = false;
         m_ToDisplay = false;
 
@@ -218,12 +218,12 @@ BOOL ObjectClass::Unlimbo(coord_t coord, DirType dir)
 void ObjectClass::Detach(target_t target, int a2)
 {
 #ifdef GAME_DLL
-    void(*func)(ObjectClass *, target_t, int) = reinterpret_cast<void(*)(ObjectClass *, target_t, int)>(0x0051DF74);
+    void (*func)(ObjectClass *, target_t, int) = reinterpret_cast<void (*)(ObjectClass *, target_t, int)>(0x0051DF74);
     func(this, target, a2);
 #else
     DEBUG_ASSERT(m_IsActive);
 
-    //TODO: Requires TriggerClass.
+    // TODO: Requires TriggerClass.
     /*if (AttachedTrigger != nullptr && Target_Get_RTTI(target) == RTTI_TRIGGER) {
         if (AttachedTrigger->As_Target() == target) {
             Attach_Trigger(nullptr);
@@ -235,7 +235,7 @@ void ObjectClass::Detach(target_t target, int a2)
 void ObjectClass::Detach_All(int a1)
 {
 #ifdef GAME_DLL
-    void(*func)(ObjectClass *, int) = reinterpret_cast<void(*)(ObjectClass *, int)>(0x0051DFDC);
+    void (*func)(ObjectClass *, int) = reinterpret_cast<void (*)(ObjectClass *, int)>(0x0051DFDC);
     func(this, a1);
 #elif 0
     if (a1 || Owner() != PlayerPtr->What_Type()) {
@@ -249,7 +249,7 @@ void ObjectClass::Detach_All(int a1)
 BOOL ObjectClass::Paradrop(coord_t coord)
 {
 #ifdef GAME_DLL
-    BOOL(*func)(ObjectClass *, coord_t) = reinterpret_cast<BOOL(*)(ObjectClass *, coord_t)>(0x0051E5C0);
+    BOOL (*func)(ObjectClass *, coord_t) = reinterpret_cast<BOOL (*)(ObjectClass *, coord_t)>(0x0051E5C0);
     return func(this, coord);
 #elif 0
     // Needs AnimClass and Coord_Move
@@ -263,9 +263,9 @@ BOOL ObjectClass::Paradrop(coord_t coord)
         coord_t coord = Coord_Move(Center_Coord(), DIR_NORTH, Get_Height() + 48);
 
         if (What_Am_I() == RTTI_BULLET) {
-            anim = new AnimClass(ANIM_PARABOMB, coord, 0, 1, true);   //args needs checking
+            anim = new AnimClass(ANIM_PARABOMB, coord, 0, 1, true); // args needs checking
         } else {
-            anim = new AnimClass(ANIM_PARACHUTE, coord, 0, 1, true);   //args needs checking
+            anim = new AnimClass(ANIM_PARACHUTE, coord, 0, 1, true); // args needs checking
         }
 
         anim->Attach_To(this);
@@ -278,16 +278,15 @@ BOOL ObjectClass::Paradrop(coord_t coord)
 
 BOOL ObjectClass::Render(BOOL force_render)
 {
-/*#ifdef GAME_DLL
-    BOOL(*func)(ObjectClass *, BOOL) = reinterpret_cast<BOOL(*)(ObjectClass *, BOOL)>(0x0051DD34);
-    return func(this, force_render);
-#else*/
+    /*#ifdef GAME_DLL
+        BOOL(*func)(ObjectClass *, BOOL) = reinterpret_cast<BOOL(*)(ObjectClass *, BOOL)>(0x0051DD34);
+        return func(this, force_render);
+    #else*/
     DEBUG_ASSERT(m_IsActive);
 
     coord_t render_coord = Render_Coord();
 
     if (!g_InMapEditor && !DebugUnshroud) {
-
         if (!force_render && !m_ToDisplay) {
             return false;
         }
@@ -295,7 +294,6 @@ BOOL ObjectClass::Render(BOOL force_render)
         if (!m_IsDown || m_InLimbo) {
             return false;
         }
-
     }
 
     m_ToDisplay = false;
@@ -304,200 +302,179 @@ BOOL ObjectClass::Render(BOOL force_render)
     int render_y_pos = 0;
 
     if (Map.Coord_To_Pixel(render_coord, render_x_pos, render_y_pos)) {
-
         Draw_It(render_x_pos, render_y_pos, WINDOW_TACTICAL);
+        if (g_InMapEditor && m_AttachedTrigger.Is_Valid()) {
+            Fancy_Text_Print(m_AttachedTrigger->Class_Of().Get_Name(),
+                render_x_pos + WinX,
+                render_y_pos,
+                &ColorRemaps[REMAP_2],
+                0,
+                TPF_CENTER | TPF_NOSHADOW | TPF_6PT);
+        }
+        // if (/*g_Debug_Head_To*/) {
 
-        //if (/*g_Debug_Head_To*/) {
+        if (m_Selected) {
+            if (Is_Foot()) {
+                FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
 
-            if (m_Selected) {
+                if (foot_thisptr->Head_To()) {
+                    int my_x_pos = 0;
+                    int my_y_pos = 0;
 
-                if (Is_Foot()) {
+                    int headto_x_pos = 0;
+                    int headto_y_pos = 0;
 
-                    FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
+                    int pixel_size = 3;
 
-                    if (foot_thisptr->Head_To()) {
+                    // Draw object coord pixel.
+                    Map.Coord_To_Pixel(foot_thisptr->m_Coord, my_x_pos, my_y_pos);
+                    my_y_pos += 16;
+                    g_logicPage->Put_Fat_Pixel(my_x_pos - 1, my_y_pos - 1, pixel_size, COLOR_YELLOW);
 
-                        int my_x_pos = 0;
-                        int my_y_pos = 0;
+                    // Draw HeadTo coord pixel.
+                    Map.Coord_To_Pixel(foot_thisptr->Head_To(), headto_x_pos, headto_y_pos);
+                    headto_y_pos += 16;
+                    g_logicPage->Put_Fat_Pixel(headto_x_pos - 1, headto_y_pos - 1, pixel_size, COLOR_YELLOW);
 
-                        int headto_x_pos = 0;
-                        int headto_y_pos = 0;
+                    // Draw connection line.
+                    g_logicPage->Draw_Line(my_x_pos, my_y_pos, headto_x_pos, headto_y_pos, COLOR_YELLOW);
 
-                        int pixel_size = 3;
-
-                        // Draw object coord pixel.
-                        Map.Coord_To_Pixel(foot_thisptr->m_Coord, my_x_pos, my_y_pos);
-                        my_y_pos += 16;
-                        g_logicPage->Put_Fat_Pixel(my_x_pos - 1, my_y_pos - 1, pixel_size, COLOR_YELLOW);
-
-                        // Draw HeadTo coord pixel.
-                        Map.Coord_To_Pixel(foot_thisptr->Head_To(), headto_x_pos, headto_y_pos);
-                        headto_y_pos += 16;
-                        g_logicPage->Put_Fat_Pixel(headto_x_pos - 1, headto_y_pos - 1, pixel_size, COLOR_YELLOW);
-
-                        // Draw connection line.
-                        g_logicPage->Draw_Line(my_x_pos, my_y_pos, headto_x_pos, headto_y_pos, COLOR_YELLOW);
-
-                        //Map.Flag_To_Redraw(true);
-
-                    }
-
+                    // Map.Flag_To_Redraw(true);
                 }
-
             }
+        }
 
         //}
 
-        //if (/*Special.Bit3_1 || g_Debug_Head_To*/) {
+        // if (/*Special.Bit3_1 || g_Debug_Head_To*/) {
 
-            if (m_Selected) {
+        if (m_Selected) {
+            if (Is_Foot()) {
+                FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
 
-                if (Is_Foot()) {
+                if (foot_thisptr->Head_To()) {
+                    if (foot_thisptr->Get_Path_Facing(0) != FACING_NONE) {
+                        /*int path_x_pos = 0;
+                        int path_y_pos = 0;
 
-                    FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
+                        int path2_x_pos = 0;
+                        int path2_y_pos = 0;
 
-                    if (foot_thisptr->Head_To()) {
+                        int pixel_size = 3;
 
-                        if (foot_thisptr->Get_Path_Facing(0) != FACING_NONE) {
+                        for (int index = 0; index < ARRAY_SIZE(foot_thisptr->m_Paths); ++index) {
 
-                            /*int path_x_pos = 0;
-                            int path_y_pos = 0;
+                            if (foot_thisptr->m_Paths[index] == FACING_NONE) {
+                                break;
+                            }
 
-                            int path2_x_pos = 0;
-                            int path2_y_pos = 0;
+                            cell_t adjcell = Coord_To_Cell(foot_thisptr->Head_To()) +
+                        AdjacentCell[foot_thisptr->m_Paths[index]]; coord_t coord = Cell_To_Coord(adjcell);
 
-                            int pixel_size = 3;
+                            if (Map.Coord_To_Pixel(coord, path2_x_pos, path2_y_pos) )  {
 
-                            for (int index = 0; index < ARRAY_SIZE(foot_thisptr->m_Paths); ++index) {
+                                path2_y_pos += 16;
 
-                                if (foot_thisptr->m_Paths[index] == FACING_NONE) {
-                                    break;
-                                }
-
-                                cell_t adjcell = Coord_To_Cell(foot_thisptr->Head_To()) + AdjacentCell[foot_thisptr->m_Paths[index]];
-                                coord_t coord = Cell_To_Coord(adjcell);
-
-                                if (Map.Coord_To_Pixel(coord, path2_x_pos, path2_y_pos) )  {
-
-                                    path2_y_pos += 16;
-
-                                    Fancy_Text_Print()
-                                    g_logicPage->Draw_Line(path_x_pos, path_y_pos, path2_x_pos, path2_y_pos, COLOR_YELLOW);
-                                    g_logicPage->Put_Fat_Pixel(path2_x_pos - 2, path2_y_pos - 2, pixel_size, COLOR_GREEN);
-
-                                }
-
-                                path_x_pos = path2_x_pos;
-                                path_y_pos = path2_y_pos;
+                                Fancy_Text_Print()
+                                g_logicPage->Draw_Line(path_x_pos, path_y_pos, path2_x_pos, path2_y_pos, COLOR_YELLOW);
+                                g_logicPage->Put_Fat_Pixel(path2_x_pos - 2, path2_y_pos - 2, pixel_size, COLOR_GREEN);
 
                             }
 
-                            Map.Coord_To_Pixel(foot_thisptr->m_Coord, path_x_pos, path_y_pos);
-
-                            path_y_pos += 16;
-
-                            g_logicPage->Put_Fat_Pixel(path_x_pos - 1, path_y_pos - 1, pixel_size, COLOR_PINK);*/
-
-                            //Map.Flag_To_Redraw(true);
+                            path_x_pos = path2_x_pos;
+                            path_y_pos = path2_y_pos;
 
                         }
 
+                        Map.Coord_To_Pixel(foot_thisptr->m_Coord, path_x_pos, path_y_pos);
+
+                        path_y_pos += 16;
+
+                        g_logicPage->Put_Fat_Pixel(path_x_pos - 1, path_y_pos - 1, pixel_size, COLOR_PINK);*/
+
+                        // Map.Flag_To_Redraw(true);
                     }
-
                 }
-
             }
+        }
 
         //}
 
-        //if (/*g_Debug_Nav_Com*/) {
+        // if (/*g_Debug_Nav_Com*/) {
 
-            if (m_Selected) {
+        if (m_Selected) {
+            if (Is_Foot()) {
+                FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
 
-                if (Is_Foot()) {
+                if (Target_Legal(foot_thisptr->Nav_Com())) {
+                    int my_x_pos = 0;
+                    int my_y_pos = 0;
 
-                    FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
+                    int navcom_x_pos = 0;
+                    int navcom_y_pos = 0;
 
-                    if (Target_Legal(foot_thisptr->Nav_Com())) {
+                    int pixel_size = 3;
 
-                        int my_x_pos = 0;
-                        int my_y_pos = 0;
+                    // Draw object coord pixel.
+                    Map.Coord_To_Pixel(foot_thisptr->m_Coord, my_x_pos, my_y_pos);
+                    my_y_pos += 16;
+                    g_logicPage->Put_Fat_Pixel(my_x_pos - 1, my_y_pos - 1, pixel_size, COLOR_BLUE);
 
-                        int navcom_x_pos = 0;
-                        int navcom_y_pos = 0;
+                    // Draw HeadTo coord pixel.
+                    Map.Coord_To_Pixel(As_Coord(foot_thisptr->Nav_Com()), navcom_x_pos, navcom_y_pos);
+                    navcom_y_pos += 16;
+                    g_logicPage->Put_Fat_Pixel(navcom_x_pos - 1, navcom_y_pos - 1, pixel_size, COLOR_BLUE);
 
-                        int pixel_size = 3;
+                    // Draw connection line.
+                    g_logicPage->Draw_Line(my_x_pos, my_y_pos, navcom_x_pos, navcom_y_pos, COLOR_BLUE);
 
-                        // Draw object coord pixel.
-                        Map.Coord_To_Pixel(foot_thisptr->m_Coord, my_x_pos, my_y_pos);
-                        my_y_pos += 16;
-                        g_logicPage->Put_Fat_Pixel(my_x_pos - 1, my_y_pos - 1, pixel_size, COLOR_BLUE);
-
-                        // Draw HeadTo coord pixel.
-                        Map.Coord_To_Pixel(As_Coord(foot_thisptr->Nav_Com()), navcom_x_pos, navcom_y_pos);
-                        navcom_y_pos += 16;
-                        g_logicPage->Put_Fat_Pixel(navcom_x_pos - 1, navcom_y_pos - 1, pixel_size, COLOR_BLUE);
-
-                        // Draw connection line.
-                        g_logicPage->Draw_Line(my_x_pos, my_y_pos, navcom_x_pos, navcom_y_pos, COLOR_BLUE);
-
-                        //Map.Flag_To_Redraw(true);
-
-                    }
-
+                    // Map.Flag_To_Redraw(true);
                 }
-
             }
+        }
 
         //}
 
-        //if (/*g_Debug_Tar_Com*/) {
+        // if (/*g_Debug_Tar_Com*/) {
 
-            if (m_Selected) {
+        if (m_Selected) {
+            if (Is_Foot()) {
+                FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
 
-                if (Is_Foot()) {
+                if (Target_Legal(foot_thisptr->Get_TarCom())) {
+                    int my_x_pos = 0;
+                    int my_y_pos = 0;
 
-                    FootClass *foot_thisptr = reinterpret_cast<FootClass *>(this);
+                    int tarcom_x_pos = 0;
+                    int tarcom_y_pos = 0;
 
-                    if (Target_Legal(foot_thisptr->Get_TarCom())) {
+                    int pixel_size = 3;
 
-                        int my_x_pos = 0;
-                        int my_y_pos = 0;
+                    // Draw object coord pixel.
+                    Map.Coord_To_Pixel(foot_thisptr->m_Coord, my_x_pos, my_y_pos);
+                    my_y_pos += 16;
+                    g_logicPage->Put_Fat_Pixel(my_x_pos - 1, my_y_pos - 1, pixel_size, COLOR_RED);
 
-                        int tarcom_x_pos = 0;
-                        int tarcom_y_pos = 0;
+                    // Draw HeadTo coord pixel.
+                    Map.Coord_To_Pixel(As_Coord(foot_thisptr->Get_TarCom()), tarcom_x_pos, tarcom_y_pos);
+                    tarcom_y_pos += 16;
+                    g_logicPage->Put_Fat_Pixel(tarcom_x_pos - 1, tarcom_y_pos - 1, pixel_size, COLOR_RED);
 
-                        int pixel_size = 3;
+                    // Draw connection line.
+                    g_logicPage->Draw_Line(my_x_pos, my_y_pos, tarcom_x_pos, tarcom_y_pos, COLOR_RED);
 
-                        // Draw object coord pixel.
-                        Map.Coord_To_Pixel(foot_thisptr->m_Coord, my_x_pos, my_y_pos);
-                        my_y_pos += 16;
-                        g_logicPage->Put_Fat_Pixel(my_x_pos - 1, my_y_pos - 1, pixel_size, COLOR_RED);
-
-                        // Draw HeadTo coord pixel.
-                        Map.Coord_To_Pixel(As_Coord(foot_thisptr->Get_TarCom()), tarcom_x_pos, tarcom_y_pos);
-                        tarcom_y_pos += 16;
-                        g_logicPage->Put_Fat_Pixel(tarcom_x_pos - 1, tarcom_y_pos - 1, pixel_size, COLOR_RED);
-
-                        // Draw connection line.
-                        g_logicPage->Draw_Line(my_x_pos, my_y_pos, tarcom_x_pos, tarcom_y_pos, COLOR_RED);
-
-                        //Map.Flag_To_Redraw(true);
-
-                    }
-
+                    // Map.Flag_To_Redraw(true);
                 }
-
             }
+        }
 
         //}
 
         return true;
-
     }
 
     return false;
-//#endif
+    //#endif
 }
 
 const int16_t *ObjectClass::Occupy_List(BOOL a1) const
@@ -518,7 +495,7 @@ fixed_t ObjectClass::Health_Ratio() const
 BOOL ObjectClass::Mark(MarkType mark)
 {
 #ifdef GAME_DLL
-    BOOL(*func)(ObjectClass *, MarkType) = reinterpret_cast<BOOL(*)(ObjectClass *, MarkType)>(0x0051E368);
+    BOOL (*func)(ObjectClass *, MarkType) = reinterpret_cast<BOOL (*)(ObjectClass *, MarkType)>(0x0051E368);
     return func(this, mark);
 #elif 0
     // Needs IOMap, DisplayClass
@@ -609,7 +586,7 @@ void ObjectClass::Mark_For_Redraw()
 BOOL ObjectClass::Select()
 {
 #ifdef GAME_DLL
-    BOOL(*func)(ObjectClass *) = reinterpret_cast<BOOL(*)(ObjectClass *)>(0x0051DBB0);
+    BOOL (*func)(ObjectClass *) = reinterpret_cast<BOOL (*)(ObjectClass *)>(0x0051DBB0);
     return func(this);
 #elif 0
     // TODO Needs TechnoClass, HouseClass, DisplayClass
@@ -707,7 +684,7 @@ DamageResultType ObjectClass::Take_Damage(int &damage, int a2, WarheadType warhe
         if (object != nullptr) {
             if (object->RTTI == RTTI_INFANTRY) {
                 InfantryClass *iptr = reinterpret_cast<InfantryClass *>(object);
-                
+
                 if (iptr->Class_Of().IsCanine) {
                     if (As_Target(this) == object->TarCom) {
                         damage = m_Health;
@@ -740,7 +717,7 @@ DamageResultType ObjectClass::Take_Damage(int &damage, int a2, WarheadType warhe
 
                 if (Is_Techno()) {
                     TechnoClass *tptr = reinterpret_cast<TechnoClass *>(object);
-                    
+
                     if (tptr != nullptr) {
                         ObjectClass *v99 = As_Object(tptr->OwnerHouse->field_531);
                         DEBUG_ASSERT(v99 != nullptr);
@@ -768,7 +745,7 @@ DamageResultType ObjectClass::Take_Damage(int &damage, int a2, WarheadType warhe
         if (result != DAMAGE_UNAFFECTED && m_Selected) {
             Mark(MARK_REDRAW);
         }
-        
+
         return result;
     }
 
