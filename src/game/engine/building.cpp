@@ -288,3 +288,13 @@ BOOL BuildingClass::Limbo()
     }
     return TechnoClass::Limbo();
 }
+
+void BuildingClass::Write_INI(GameINIClass &ini)
+{
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x0045F07C);
+    return func(ini);
+#else
+
+#endif
+}

@@ -335,9 +335,10 @@ void TeamTypeClass::Draw_It(int index, int x, int y, int x_max, int y_max, BOOL 
 /**
  * Edit window for internal map editor..
  */
-void TeamTypeClass::Edit()
+BOOL TeamTypeClass::Edit()
 {
     // TODO required for scenario editor, but not main game.
+    return 0;
 }
 
 /**

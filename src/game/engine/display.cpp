@@ -1480,7 +1480,7 @@ coord_t DisplayClass::Pixel_To_Coord(int x, int y)
  *
  * 0x004AF700
  */
-void DisplayClass::Set_Cursor_Shape(int16_t *list)
+void DisplayClass::Set_Cursor_Shape(const int16_t *list)
 {
     static int16_t tmp_list[60] = { 0 };
 

@@ -145,6 +145,7 @@ public:
     BOOL Has_Flag() const { return m_HasFlag; }
     BOOL Get_Bit128() const { return m_Bit128; }
     void Set_Bit128(BOOL value) { m_Bit128 = value; }
+    void Set_Cell_Tag(TriggerClass *trigger) { m_CellTag = trigger; }
     TemplateType Get_Template() const { return m_Template; }
     void Set_Template(TemplateType temp) { m_Template = temp; }
     uint8_t Get_Icon() const { return m_Icon; }
@@ -213,7 +214,7 @@ private:
 
     int8_t m_Zones[MZONE_COUNT]; // field_6
     uint16_t m_field_A;
-    int m_CellTag; // GamePtr<TriggerClass> CellTag; // Needs TriggerClass
+    GamePtr<TriggerClass> m_CellTag;
     TemplateType m_Template;
     uint8_t m_Icon;
     OverlayType m_Overlay;
@@ -239,12 +240,11 @@ inline BOOL CellClass::operator==(CellClass const &that) const
 {
     return m_CellNumber == that.m_CellNumber && m_Bit1 == that.m_Bit1 && m_PlacementCheck == that.m_PlacementCheck
         && m_Visible == that.m_Visible && m_Revealed == that.m_Revealed && m_Bit16 == that.m_Bit16 && m_Bit32 == that.m_Bit32
-        && m_HasFlag == that.m_HasFlag && m_Bit128 == that.m_Bit128 && m_field_A == that.m_field_A
-        && m_CellTag == that.m_CellTag && m_Template == that.m_Template && m_Icon == that.m_Icon
-        && m_Overlay == that.m_Overlay && m_OverlayFrame == that.m_OverlayFrame && m_Smudge == that.m_Smudge
-        && m_SmudgeFrame == that.m_SmudgeFrame && m_OwnerHouse == that.m_OwnerHouse && m_field_18 == that.m_field_18
-        && m_OccupierPtr == that.m_OccupierPtr && m_OccupantBit == that.m_OccupantBit && m_Land == that.m_Land
-        && memcmp(m_Zones, that.m_Zones, sizeof(m_Zones)) == 0
+        && m_HasFlag == that.m_HasFlag && m_Bit128 == that.m_Bit128 && m_field_A == that.m_field_A /*&& m_CellTag == that.m_CellTag*/
+        && m_Template == that.m_Template && m_Icon == that.m_Icon && m_Overlay == that.m_Overlay && m_OverlayFrame == that.m_OverlayFrame
+        && m_Smudge == that.m_Smudge && m_SmudgeFrame == that.m_SmudgeFrame && m_OwnerHouse == that.m_OwnerHouse
+        && m_field_18 == that.m_field_18 && m_OccupierPtr == that.m_OccupierPtr && m_OccupantBit == that.m_OccupantBit
+        && m_Land == that.m_Land && memcmp(m_Zones, that.m_Zones, sizeof(m_Zones)) == 0
         && memcmp(m_Overlapper, that.m_Overlapper, sizeof(m_Overlapper)) == 0;
 }
 

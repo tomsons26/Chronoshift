@@ -40,7 +40,7 @@ public:
     virtual void Draw_It(int x, int y, WindowNumberType window) const override {}
     virtual BOOL Mark(MarkType mark) override;
 
-    TemplateType What_Type() const { return m_Class->Get_Type(); }
+    TemplateType What_Type() const { return m_Class->What_Type(); }
 
 private:
     GamePtr<TemplateTypeClass> m_Class;

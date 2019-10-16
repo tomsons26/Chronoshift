@@ -287,7 +287,7 @@ void Init_Bulk_Data()
 
     GameINIClass ini;
     GameFileClass fc("tutorial.ini");
-    ini.Load(fc);
+    ini.Load(fc, false);
 
     // TODO size is ARRAY_SIZE(g_TutorialText), needs adjustments to hooked global or standalone.
     for (int i = 0; i < 225; ++i) {
@@ -345,7 +345,7 @@ void Init_Keys()
         "[PrivateKey]\n1=AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB\n\n";
     RAMFileClass mem_keys(Keys, strlen(Keys));
     GameINIClass tempini;
-    tempini.Load(mem_keys);
+    tempini.Load(mem_keys, false);
     g_PublicKey = tempini.Get_PKey(true);
     g_PrivateKey = tempini.Get_PKey(false); // Private key is only used to write mix files.
 }

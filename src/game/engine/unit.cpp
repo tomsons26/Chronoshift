@@ -588,3 +588,11 @@ BOOL UnitClass::Goto_Ore(int scan_radius)
     }
     return false;
 }
+
+void UnitClass::Write_INI(GameINIClass &ini)
+{
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x00581298);
+    return func(ini);
+#endif
+}

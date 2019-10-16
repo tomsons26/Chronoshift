@@ -104,7 +104,7 @@ public:
     BOOL Do_Reinforcements();
     void Detach(target_t target, int a2);
     void Draw_It(int index, int x, int y, int x_max, int y_max, BOOL selected, TextPrintType style);
-    void Edit();
+    BOOL Edit();
     void Code_Pointers();
     void Decode_Pointers();
 
@@ -145,7 +145,7 @@ protected:
     BOOL m_Reinforce : 1; // 32
 #else
     bool m_IsActive;
-    bool m_AvoidThreats; // Always take the safest route, even if it’s a detour.
+    bool m_AvoidThreats; // Always take the safest route, even if itâ€™s a detour.
     bool m_Suicide; // Charge at target ignoring enemy units/enemy fire.
     bool m_Autocreate; // Team is only used by autocreate AI (produced taskforces).
     bool m_Prebuild; // Prebuild team members before creating.

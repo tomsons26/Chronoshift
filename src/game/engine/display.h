@@ -81,7 +81,7 @@ public:
 
     //void Write_INI(GameINIClass &ini); // Not virtual in RA.
     coord_t Pixel_To_Coord(int x, int y);
-    void Set_Cursor_Shape(int16_t *list = nullptr);
+    void Set_Cursor_Shape(const int16_t *list = nullptr);
     void Refresh_Band();
     void Cursor_Mark(cell_t cellnum, BOOL flag);
     void Get_Occupy_Dimensions(int &w, int &h, int16_t *list) const;
@@ -112,6 +112,7 @@ public:
     void Constrained_Look(coord_t coord, int constraint);
     void Encroach_Shadow();
     void Shroud_Cell(cell_t cellnum);
+    BOOL Is_Spot_Free(coord_t coord) const;
 
     void All_Layers_To_Redraw();
     void Flag_All_Cells_To_Redraw();
@@ -141,7 +142,6 @@ private:
     // This only seems to be used by DisplayClass, so made it a static helper of this class.
     static int __cdecl Clip_Rect(int &x, int &y, int &w, int &h, int clip_w, int clip_h);
     void Check_Proximity(ObjectTypeClass *object, HousesType house, cell_t cell, int &passes, bool &outside_radar) const;
-    BOOL Is_Spot_Free(coord_t coord) const;
 
  protected:
     coord_t m_DisplayPos; // Coord of top left of tactical display within the map.

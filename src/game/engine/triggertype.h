@@ -81,7 +81,7 @@ class TriggerTypeClass : public AbstractTypeClass
 public:
     TriggerTypeClass();
     TriggerTypeClass(const NoInitClass &noinit) : AbstractTypeClass(noinit) {}
-    ~TriggerTypeClass() {}
+    virtual ~TriggerTypeClass() {}
 
     void *operator new(size_t size);
     void *operator new(size_t size, void *ptr) { return ptr; }

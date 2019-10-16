@@ -462,7 +462,7 @@ public:
     int Get_Width() { return m_Width; }
     int Get_Height() { return m_Height; }
 
-    TemplateType Get_Type() const { return m_Type; }
+    TemplateType What_Type() const { return m_Type; }
 
     static TemplateType From_Name(const char *name);
     static const char *Name_From(TemplateType type);

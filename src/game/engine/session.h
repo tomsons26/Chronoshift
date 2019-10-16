@@ -107,10 +107,14 @@ struct NodeNameTag
     HousesType m_House;
     PlayerColorType m_Color;
     HousesType m_AltHouse;
+
+    NodeNameTag() : m_Address() {}
 };
 
 class SessionClass
 {
+    friend class MapEditClass;
+
 public:
     SessionClass();
     ~SessionClass();

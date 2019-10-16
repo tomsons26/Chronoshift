@@ -26,12 +26,6 @@
 //
 #define BUTTON_NONE -1
 
-// Standard Button ID's
-#define BUTTON_OK 1
-#define BUTTON_CANCEL 2
-#define BUTTON_YES 3
-#define BUTTON_NO 4
-
 //
 // Ingame UI Gadget ID's
 //
@@ -180,7 +174,7 @@ extern BOOL &g_Debug_Icon;
 extern BOOL &g_Debug_Flag;
 extern BOOL &g_Debug_Lose;
 extern BOOL &g_Debug_Win;
-//extern BOOL &g_Debug_Map; // NOTE: Use g_InMapEditor
+extern BOOL &g_Debug_Map; // NOTE: Use g_InMapEditor
 extern BOOL &g_Debug_Passable;
 extern BOOL &g_Debug_Unshroud;
 extern BOOL &g_Debug_Threat;

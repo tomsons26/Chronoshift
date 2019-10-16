@@ -170,7 +170,6 @@ public:
 protected:
     int m_RedrawFlag;
 
-private:
 #ifdef GAME_DLL
     static GadgetClass *&g_Buttons;
     static GraphicViewPortClass *&g_ShadowPage;

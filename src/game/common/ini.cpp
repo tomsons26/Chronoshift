@@ -442,9 +442,8 @@ BOOL INIClass::Put_UUBlock(const char *section, void *buffer, int length)
 
         char block_buff[MAX_UUBLOCK_LINE_LENGTH + 2];
         char entry_buff[32];
-        int entry = 1;
 
-        while (true) {
+        for (int entry = 1;; ++entry) {
             // Once buffer straw has exhausted all bytes passed in, get will return 0.
             int bytes = b64straw.Get(block_buff, MAX_UUBLOCK_LINE_LENGTH);
             block_buff[bytes] = '\0';
@@ -453,7 +452,7 @@ BOOL INIClass::Put_UUBlock(const char *section, void *buffer, int length)
                 break;
             }
 
-            snprintf(entry_buff, sizeof(entry_buff), "%d", entry++);
+            snprintf(entry_buff, sizeof(entry_buff), "%d", entry);
             Put_String(section, entry_buff, block_buff);
         }
 

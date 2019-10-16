@@ -1061,6 +1061,21 @@ void Setup_Hooks()
     Hook_Function(0x0056016C, TeamTypeClass::Suggested_New_Team);
     Hook_Function_Const(0x005600C4, &TeamTypeClass::Create_One_Of);
     Hook_Function_Const(0x00560114, &TeamTypeClass::Destroy_All_Of);
+
+    //TEMP, replaces special dialog so i can test invoking map editor menus
+    Hook_Function(0x00550DF0, *MapEditClass::Spec);
+    // replaces sidebar init_io
+    Hook_Call(0x00538748, *MapEditClass::Init_IO);
+    // replaces mouse ctor
+    Hook_Function(0x0050301C, *MapEditClass::Hook_Ctor);
+    // replaces mouse one_time
+    Hook_Call(0x004F78E5, *MapEditClass::One_Time);
+    // replaces display read_ini
+    Hook_Call(0x0053DC34, *MapEditClass::Read_INI);
+
+    Hook_Function(0x0051DD34, *ObjectClass::Render);
+    // a val it sets is needed for editor case in ObjectClass::Render
+    Hook_Function(0x005CC890, *Change_Window);
 #endif
 }
 

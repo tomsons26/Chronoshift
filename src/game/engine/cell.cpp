@@ -21,6 +21,7 @@
 #include "drawshape.h"
 #include "gamedebug.h"
 #include "gamefile.h"
+#include "gameptr.h"
 #include "gbuffer.h"
 #include "globals.h"
 #include "ground.h"
@@ -37,6 +38,7 @@
 #include "theater.h"
 #include "tileset.h"
 #include "tracker.h"
+#include "trigger.h"
 #include <algorithm>
 
 // clang-format off
@@ -64,7 +66,7 @@ CellClass::CellClass() :
     m_HasFlag(false),
     m_Bit128(false),
     m_field_A(0),
-    m_CellTag(-1), // TODO, should be default GamePtr Ctor.
+    m_CellTag(), // TODO, should be default GamePtr Ctor.
     m_Template(TEMPLATE_NONE),
     m_Icon(0),
     m_Overlay(OVERLAY_NONE),
@@ -792,7 +794,8 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
     int icon_num = 0;
     void *fading_table = nullptr;
     ObjectClass *obj = nullptr;
-    TemplateTypeClass *tt = nullptr;
+    TemplateTypeClass *tt;
+    OverlayTypeClass *otc;
 
     GraphicViewPortClass dbgcell(g_LogicPage->Get_Graphic_Buffer(),
         g_LogicPage->Get_XPos() + g_WindowList[WINDOW_TACTICAL].X,
@@ -818,35 +821,19 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
             icon_num = Clear_Icon();
         }
 
-#ifdef CHRONOSHIFT_DEBUG
+        void *fading = nullptr;
         if (g_Debug_Passable) {
-            // editor version from edwin
-            if (g_InMapEditor) {
-                // impassable
-                if (g_Ground[m_Land].Get_Speed(SPEED_FOOT) == fixed_t(0, 0) || m_OccupierPtr != nullptr) {
-                    fading_table = DisplayClass::s_FadingRed;
-                }
-                // is occupied by multiple objects, could had been for finding overlapping objects?
-                if (m_OccupierPtr != nullptr && m_OccupierPtr->Get_Next() != nullptr) {
-                    fading_table = DisplayClass::s_FadingYellow;
-                }
-            // ingame version from RA beta
+            if (g_Ground[m_Land].Get_Speed(SPEED_FOOT) == 0
+                || m_OccupierPtr != nullptr && m_OccupierPtr->What_Am_I() != RTTI_INFANTRY) {
+                fading = DisplayClass::s_FadingRed;
             } else {
-                // impassable
-                if (g_Ground[m_Land].Get_Speed(SPEED_FOOT) == fixed_t(0, 0)
-                    || m_OccupierPtr != nullptr && m_OccupierPtr->What_Am_I() != RTTI_INFANTRY) {
-                    fading_table = DisplayClass::s_FadingRed;
-                // unit will be very slow on this cell, in a unmodified RA this won't ever be true
-                } else if (g_Ground[m_Land].Get_Speed(SPEED_FOOT) <= fixed_t(1, 3)) {
-                    fading_table = DisplayClass::s_FadingYellow;
-                // fully passable
+                if (g_Ground[m_Land].Get_Speed(SPEED_FOOT) <= fixed_t(0, 3)) {
+                    fading = DisplayClass::s_FadingYellow;
                 } else {
-                    fading_table = DisplayClass::s_FadingGreen;
+                    fading = DisplayClass::s_FadingGreen;
                 }
             }
         }
-#endif
-
         if (tt->Get_Image_Data() != nullptr) {
             g_LogicPage->Draw_Stamp(tt->Get_Image_Data(),
                 icon_num,
@@ -857,28 +844,16 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
                 g_WindowList[WINDOW_TACTICAL].Y,
                 g_WindowList[WINDOW_TACTICAL].W,
                 g_WindowList[WINDOW_TACTICAL].H);
-#ifdef CHRONOSHIFT_DEBUG
-            if (g_Debug_Passable) {
-                if (fading_table != nullptr) {
-                    GraphicViewPortClass remap(g_LogicPage->Get_Graphic_Buffer(),
-                        g_LogicPage->Get_XPos() + g_WindowList[WINDOW_TACTICAL].X,
-                        g_LogicPage->Get_YPos() + g_WindowList[WINDOW_TACTICAL].Y,
-                        g_WindowList[WINDOW_TACTICAL].W,
-                        g_WindowList[WINDOW_TACTICAL].H);
-                    // original line, i think this could result in out of bounds draws so using what edwin does instead
-                    // g_LogicPage->Remap(x + g_Map.Tac_Offset_X(), y + g_Map.Tac_Offset_Y(), CELL_PIXELS, CELL_PIXELS, (unsigned char *)fading_table);
-                    remap.Remap(x, y, CELL_PIXELS, CELL_PIXELS, (unsigned char *)fading_table);
-                }
-            }
-#endif
-        }
-#ifdef CHRONOSHIFT_DEBUG
-        if (g_InMapEditor) {
-            if (CurrentSelectedCell == m_CellNumber) {
-                // TODO!
+            if (fading != nullptr) {
+                g_LogicPage->Remap(x + g_Map.Tac_Offset_X(), y + g_Map.Tac_Offset_Y(), 24, 24, (unsigned char *)fading);
             }
         }
-#endif
+
+        if (g_InMapEditor && CurrentSelectedCell == m_CellNumber) {
+            g_LogicPage->Draw_Rect(
+                x + g_Map.Tac_Offset_X(), y + g_Map.Tac_Offset_Y(), x + g_Map.Tac_Offset_X() + 23, y + g_Map.Tac_Offset_Y() + 23, 5);
+        }
+
         if (m_Smudge != SMUDGE_NONE && m_SmudgeFrame != -1) {
             SmudgeTypeClass::As_Reference(m_Smudge).Draw_It(x, y, m_SmudgeFrame);
         }
@@ -899,7 +874,96 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
                 DisplayClass::s_UnitShadow);
             g_IsTheaterShape = false;
         }
+        if (g_InMapEditor) {
+            if (m_CellTag.Has_Valid_ID()) {
+                Fancy_Text_Print(m_CellTag->Class_Of().Get_Name(),
+                    x + g_Map.Tac_Offset_X(),
+                    y + g_Map.Tac_Offset_Y(),
+                    &g_ColorRemaps[REMAP_2],
+                    0,
+                    TPF_CENTER | TPF_OUTLINE | TPF_EDITOR);
+            }
+            // Waypoints
+            if (m_Bit16) {
+                char v43[4];
+                int i;
+                for (i = 0;; ++i) {
+                    if (i >= WAYPOINT_HOME) {
+                        goto LABEL_58;
+                    }
+                    if (m_CellNumber == g_Scen.Get_Waypoint(i)) {
+                        break;
+                    }
+                }
+                if (i >= 0x1A) {
+                    v43[0] = i / 0x1A + 0x40;
+                    v43[1] = i % 0x1A + 0x41;
+                    v43[2] = 0;
+                } else {
+                    v43[0] = i + 0x41;
+                    v43[1] = 0;
+                }
+                Fancy_Text_Print(v43,
+                    x + g_Map.Tac_Offset_X() + 12,
+                    y + g_Map.Tac_Offset_Y() + 9,
+                    &g_ColorRemaps[REMAP_2],
+                    0,
+                    TPF_CENTER | TPF_OUTLINE | TPF_EDITOR);
+            LABEL_58:
+                if (m_CellNumber == g_Scen.Get_Waypoint(WAYPOINT_HOME)) {
+                    Fancy_Text_Print("Home",
+                        x + g_Map.Tac_Offset_X(),
+                        y + g_Map.Tac_Offset_Y() + 17,
+                        &g_ColorRemaps[REMAP_5],
+                        0,
+                        TPF_OUTLINE | TPF_EDITOR);
+                }
+                if (m_CellNumber == g_Scen.Get_Waypoint(WAYPOINT_REINF)) {
+                    Fancy_Text_Print("Reinf",
+                        x + g_Map.Tac_Offset_X(),
+                        y + g_Map.Tac_Offset_Y() + 17,
+                        &g_ColorRemaps[REMAP_5],
+                        0,
+                        TPF_OUTLINE | TPF_EDITOR);
+                }
+            }
+            /*
+            /////////////////////
+            if (m_Bit32) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_LTCYAN);
+            }
+            // just to find out what it is
+            if (m_Bit128) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_PURPLE);
+            }
+            // just to find out what it is
 
+            if (m_Bit1) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_GREEN);
+            }
+
+            // just to find out what it is
+            if (m_PlacementCheck) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_PINK);
+            }
+            */
+        }
         if (m_PlacementCheck) {
             SpeedType speed = SPEED_NONE;
 
@@ -929,37 +993,46 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
                 g_WindowList[WINDOW_TACTICAL].W,
                 g_WindowList[WINDOW_TACTICAL].H);
 
-#if 0 // TODO Edwin map stuff.
-            if (g_Debug_Placement_Ghosts) {
-                if (g_Map.Pending_ObjectType() != nullptr) {
-                    switch (g_Map.Pending_ObjectType()->What_Am_I()) {
-                        case RTTI_VESSEL:
-                            // TODO
+            // draws pending terrain object
+            if (g_InMapEditor && g_Map.Pending_ObjectType() != nullptr) {
+                switch (g_Map.Pending_ObjectType()->What_Am_I()) {
+                    case RTTI_OVERLAYTYPE:
+                        OverlayTypeClass::As_Reference(
+                            reinterpret_cast<OverlayTypeClass *>(g_Map.Pending_ObjectType())->What_Type())
+                            .Draw_It(x, y, m_OverlayFrame);
+                        break;
+                    case RTTI_SMUDGETYPE:
+                        SmudgeTypeClass::As_Reference(
+                            reinterpret_cast<SmudgeTypeClass *>(g_Map.Pending_ObjectType())->What_Type())
+                            .Draw_It(x, y, m_SmudgeFrame);
 
-                        case RTTI_BUILDING:
-                            // TODO
+                        break;
+                    // this seems to be what Beta does, this case probably isn't proper for final RA
+                    case RTTI_TEMPLATETYPE:
+                        tt = &TemplateTypeClass::As_Reference(
+                            reinterpret_cast<TemplateTypeClass *>(g_Map.Pending_ObjectType())->What_Type());
+                        if (g_Map.Pending_ObjectType()->Get_Image_Data() != nullptr) {
+                            GraphicViewPortClass remap(g_LogicPage->Get_Graphic_Buffer(),
+                                g_LogicPage->Get_XPos() + g_WindowList[WINDOW_TACTICAL].X,
+                                g_LogicPage->Get_YPos() + g_WindowList[WINDOW_TACTICAL].Y,
+                                g_WindowList[WINDOW_TACTICAL].W,
+                                g_WindowList[WINDOW_TACTICAL].H);
 
-                        case RTTI_UNIT:
-                            // TODO
-
-                        case RTTI_INFANTRY:
-                            // TODO
-
-                        case RTTI_AIRCRAFT:
-                            // TODO
-                        case RTTI_OVERLAYTYPE:
-                            break;
-                        case RTTI_SMUDGETYPE:
-                            break;
-                        case RTTI_TEMPLATETYPE:
-                            break;
-
-                        default:
-                            break;
-                    }
+                            g_LogicPage->Draw_Stamp(tt->Get_Image_Data(),
+                                icon_num,
+                                x,
+                                y,
+                                nullptr,
+                                g_WindowList[WINDOW_TACTICAL].X,
+                                g_WindowList[WINDOW_TACTICAL].Y,
+                                g_WindowList[WINDOW_TACTICAL].W,
+                                g_WindowList[WINDOW_TACTICAL].H);
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
-#endif
         }
 
         if (m_HasFlag) {

@@ -30,6 +30,7 @@
 #include "radio.h"
 #include "stage.h"
 #include "ttimer.h"
+#include "house.h"
 
 class BulletClass;
 
@@ -158,6 +159,7 @@ public:
     int Anti_Armor();
     int Anti_Infantry();
     const GamePtr<HouseClass> &Get_Owner_House() const { return m_OwnerHouse; }
+    void Set_Owner_House(const HouseClass *house) { m_OwnerHouse = house; }
     FacingClass &Get_Facing() { return m_Facing; }
     int Get_Price() const { return m_Price; }
     void Set_Price(int price) { m_Price = price; }

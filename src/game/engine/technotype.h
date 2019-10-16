@@ -57,11 +57,11 @@ public:
     BOOL Is_Two_Shooter() const;
     BOOL Legal_Placement(cell_t cellnum) const;
     BOOL Is_Nominal() const { return m_IsNominal; }
+    BOOL Is_Theater() const { return m_IsTheater; }
     int Get_ThreatPosed() const { return m_ThreatPosed; }
     int Get_ThreatPoints() const { return m_ThreatPoints; }
     BOOL Is_Invisible() const { return m_IsInvisible; }
     BOOL Is_Cloakable() const { return m_Cloakable; }
-    BOOL Is_Theater() const { return m_IsTheater; }
     BOOL Is_Turret_Equipped() const { return m_IsTurretEquipped; }
     BOOL Is_Crewed() const { return m_IsCrewed; }
     BOOL Is_Repairable() const { return m_IsRepairable; }

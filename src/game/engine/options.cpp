@@ -237,7 +237,7 @@ void OptionsClass::Save_Settings()
     GameINIClass ini;
 
     if (fc.Is_Available()) {
-        ini.Load(fc);
+        ini.Load(fc, false);
     }
 
     ini.Put_Int("Options", "GameSpeed", GameSpeed);
@@ -313,7 +313,7 @@ void OptionsClass::Save_Settings()
     ini.Put_KeyNumType("WinHotkeys", "KeyTeam9", KeyTeam9);
     ini.Put_KeyNumType("WinHotkeys", "KeyTeam10", KeyTeam10);
 
-    ini.Save(fc);
+    ini.Save(fc, false);
 }
 
 /**
@@ -326,7 +326,7 @@ void OptionsClass::Load_Settings()
     GameFileClass fc(g_SettingsFilename);
 
     GameINIClass ini;
-    ini.Load(fc);
+    ini.Load(fc, false);
 
     GameSpeed = ini.Get_Int("Options", "GameSpeed", GameSpeed);
     ScrollRate = ini.Get_Int("Options", "ScrollRate", ScrollRate);

@@ -59,8 +59,15 @@ public:
 
     BaseNodeClass *Next_Buildable(BuildingType type);
 
+    HousesType Get_Player_House() { return m_Player; }
+    void Set_Player_House(HousesType house) {m_Player = house; }
     void Clear() { m_Player = HOUSES_NONE; m_Nodes.Clear(); }
     int Node_Count() const { return m_Nodes.Count(); }
+
+    void Add_Node(BaseNodeClass &node)
+    {
+        m_Nodes.Add(node);
+    }
 
     void Read_INI(GameINIClass &ini);
     void Write_INI(GameINIClass &ini);

@@ -73,6 +73,13 @@ public:
     }
 #endif
 
+    void Set_Rebuild(bool rebuild) { m_Bit1 = rebuild; }
+    void Set_Sellable(bool sellable) { m_Bit2 = sellable; }
+    bool Rebuild() { return m_Bit1; }
+    bool Sellable() { return m_Bit2; }
+
+    static void Read_INI(GameINIClass &ini);
+    static void Write_INI(GameINIClass &ini);
 
 private:
     GamePtr<BuildingTypeClass> m_Class;

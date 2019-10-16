@@ -32,6 +32,9 @@
 enum ScenarioEnums
 {
     VIEW_COUNT = 4,
+    WAYPOINT_HOME = 98,
+    WAYPOINT_REINF = 99,
+    WAYPOINT_SUPER = 100,
     WAYPOINT_COUNT = 101,
 };
 
@@ -41,6 +44,8 @@ enum ScenarioPlayerEnum
     SCEN_PLAYER_GREECE,
     SCEN_PLAYER_USSR,
     SCEN_PLAYER_SPECIAL,
+    SCEN_PLAYER_4,
+    SCEN_PLAYER_5,
 };
 
 enum ScenarioDirEnum
@@ -62,6 +67,10 @@ enum ScenarioVarEnum
 
 class ScenarioClass
 {
+    friend int Read_Scenario_INI(const char *, int);
+    friend void Write_Scenario_INI(const char *);
+    friend class MapEditClass;
+
 public:
     ScenarioClass();
 
@@ -93,6 +102,7 @@ public:
     cell_t Get_Waypoint(int waypoint_num) const { return m_Waypoints[waypoint_num]; }
     void Set_Waypoint(int waypoint_num, cell_t cell) { m_Waypoints[waypoint_num] = cell; }
     void Set_Carry_Over_Money(fixed_t value) { m_CarryOverMoney = value; }
+    void Set_Carry_Over_Money_Amount(int value) { m_CarryOverMoneyAmount = value; }
     cell_t Get_View(int index) const { return m_Views[index]; }
     void Set_View(int index, cell_t cell) { m_Views[index] = cell; }
     int Get_Bridge_Count() const { return m_BridgeCount; }
@@ -100,6 +110,7 @@ public:
     BOOL Get_Global(int index) const { return m_GlobalVariables[index]; }
     BOOL Get_field_7CF() const { return m_field_7CF; }
     BOOL Get_field_7D3() const { return m_field_7D3; }
+    int Get_CarryOver_Percent() const { return m_CarryOverPercent; }
     BOOL Evacuate_Civilians() const { return m_CivEvac; }
 
 #ifdef GAME_DLL
@@ -116,7 +127,7 @@ private:
     DiffType m_HumanDifficulty;
     DiffType m_AIDifficulty;
     TCountDownTimerClass<FrameTimerClass> m_ElapsedTimer;
-    cell_t m_Waypoints[WAYPOINT_COUNT]; // 98 = unknown, 99 = unknown, 100 = Home cell, 101 = Super cell.
+    cell_t m_Waypoints[WAYPOINT_COUNT]; // 98 = Home cell, 99 Reinforcement cell, 100 = Super cell
     TCountDownTimerClass<FrameTimerClass> m_GlobalTimer;
     TCountDownTimerClass<FrameTimerClass> m_SomeTimer;
     int m_ScenarioIndex;

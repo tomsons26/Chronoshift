@@ -42,12 +42,6 @@ inline coord_t Pixels_To_Cells(int pixels)
 // Controls ID's
 #define BUTTON_NONE -1
 
-// Standard Button ID's
-#define BUTTON_OK 1
-#define BUTTON_CANCEL 2
-#define BUTTON_YES 3
-#define BUTTON_NO 4
-
 // Ingame GUI Gadget ID's
 #define BUTTON_REPAIR 101
 //#define BUTTON_

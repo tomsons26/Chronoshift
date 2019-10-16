@@ -38,3 +38,13 @@ InfantryClass::InfantryClass(const NoInitClass &noinit) :
 InfantryClass::~InfantryClass()
 {
 }
+
+void InfantryClass::Write_INI(GameINIClass &ini)
+{
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x004F0A84);
+    return func(ini);
+#else
+
+#endif
+}

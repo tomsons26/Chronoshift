@@ -173,6 +173,12 @@ public:
 
     int32_t const Get_Unique_ID();
 
+    int Load(FileClass &file, BOOL check_digest);
+    int Load(Straw &straw, BOOL check_digest);
+
+    int Save(FileClass &file, BOOL write_digest);
+    int Save(Pipe &pipe, BOOL write_digest);
+
 private:
 #ifndef CHRONOSHIFT_NO_BITFIELDS
     BOOL m_DigestValid : 1; // & 1
