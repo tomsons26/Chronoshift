@@ -39,6 +39,12 @@ public:
 
     BuildingType What_Type() const { return m_Class->What_Type(); }
 
+    bool Rebuild() { return m_Bit1; }
+    bool Sellable() { return m_Bit2; }
+
+    static void Read_INI(GameINIClass &ini);
+    static void Write_INI(GameINIClass &ini);
+
 private:
     GamePtr<BuildingTypeClass> m_Class;
     GamePtr<FactoryClass> m_Factory;

@@ -210,7 +210,7 @@ private:
 
     int8_t Zones[MZONE_COUNT]; // field_6
     uint16_t field_A;
-    int CellTag; // GamePtr<TriggerClass> CellTag; // Needs TriggerClass
+    GamePtr<TriggerClass> CellTag;
     TemplateType Template;
     uint8_t Icon;
     OverlayType Overlay;
@@ -236,7 +236,7 @@ inline BOOL CellClass::operator==(CellClass const &that) const
 {
     return CellNumber == that.CellNumber && Bit1 == that.Bit1 && PlacementCheck == that.PlacementCheck
         && Visible == that.Visible && Revealed == that.Revealed && Bit16 == that.Bit16 && Bit32 == that.Bit32
-        && HasFlag == that.HasFlag && Bit128 == that.Bit128 && field_A == that.field_A && CellTag == that.CellTag
+        && HasFlag == that.HasFlag && Bit128 == that.Bit128 && field_A == that.field_A /*&& CellTag == that.CellTag*/
         && Template == that.Template && Icon == that.Icon && Overlay == that.Overlay && OverlayFrame == that.OverlayFrame
         && Smudge == that.Smudge && SmudgeFrame == that.SmudgeFrame && OwnerHouse == that.OwnerHouse
         && field_18 == that.field_18 && OccupierPtr == that.OccupierPtr && OccupantBit == that.OccupantBit

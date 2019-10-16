@@ -20,6 +20,7 @@
 #include "drawshape.h"
 #include "gamedebug.h"
 #include "gamefile.h"
+#include "gameptr.h"
 #include "gbuffer.h"
 #include "globals.h"
 #include "ground.h"
@@ -36,6 +37,7 @@
 #include "theater.h"
 #include "tileset.h"
 #include "tracker.h"
+#include "trigger.h"
 #include <algorithm>
 
 // clang-format off
@@ -63,7 +65,7 @@ CellClass::CellClass() :
     HasFlag(false),
     Bit128(false),
     field_A(0),
-    CellTag(-1), // TODO, should be default GamePtr Ctor.
+    CellTag(), // TODO, should be default GamePtr Ctor.
     Template(TEMPLATE_NONE),
     Icon(0),
     Overlay(OVERLAY_NONE),
@@ -792,6 +794,7 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
     void *fading_table = nullptr;
     ObjectClass *obj = nullptr;
     TemplateTypeClass *tt;
+    OverlayTypeClass *otc;
 
     GraphicViewPortClass dbgcell(g_logicPage->Get_Graphic_Buffer(),
         g_logicPage->Get_XPos() + WindowList[WINDOW_TACTICAL].X,
@@ -814,23 +817,19 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
             icon_num = Clear_Icon();
         }
 
-#if 0 // TODO Editor related stuff.
-        if ((g_InMapEditor && Map.field_8567) /*|| Debug_CellPassable*/) {
-            if (!Ground[Land].Is_Buildable() || Ground[Land].Get_Speed(SPEED_FOOT) == fixed_t::_0_1 && obj != nullptr) {
-                fading_table = DisplayClass::FadingRed;
+        void *fading = nullptr;
+        if (g_Debug_Passable) {
+            if (Ground[Land].Get_Speed(SPEED_FOOT) == 0
+                || OccupierPtr != nullptr && OccupierPtr->What_Am_I() != RTTI_INFANTRY) {
+                fading = DisplayClass::FadingRed;
+            } else {
+                if (Ground[Land].Get_Speed(SPEED_FOOT) <= fixed_t(0, 3)) {
+                    fading = DisplayClass::FadingYellow;
+                } else {
+                    fading = DisplayClass::FadingGreen;
+                }
             }
         }
-    
-        obj = Cell_Occupier();
-
-        if ((g_InMapEditor
-                && obj != nullptr /*&& obj->Get_Next() != nullptr*/) /*|| Debug_CellOccupied*/) {
-            if (Occupied_By_Foot()) {
-                fading_table = DisplayClass::FadingYellow;
-            }
-        }
-#endif
-
         if (tt->Get_Image_Data() != nullptr) {
             GraphicViewPortClass remap(g_logicPage->Get_Graphic_Buffer(),
                 g_logicPage->Get_XPos() + WindowList[WINDOW_TACTICAL].X,
@@ -847,12 +846,14 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
                 WindowList[WINDOW_TACTICAL].Y,
                 WindowList[WINDOW_TACTICAL].W,
                 WindowList[WINDOW_TACTICAL].H);
+            if (fading != nullptr) {
+                g_logicPage->Remap(x + Map.Tac_Offset_X(), y + Map.Tac_Offset_Y(), 24, 24, (unsigned char *)fading);
+            }
         }
 
-        if (g_InMapEditor) {
-            if (CurrentSelectedCell == CellNumber) {
-                // TODO!
-            }
+        if (g_InMapEditor && CurrentSelectedCell == CellNumber) {
+            g_logicPage->Draw_Rect(
+                x + Map.Tac_Offset_X(), y + Map.Tac_Offset_Y(), x + Map.Tac_Offset_X() + 23, y + Map.Tac_Offset_Y() + 23, 5);
         }
 
         if (Smudge != SMUDGE_NONE && SmudgeFrame != -1) {
@@ -863,9 +864,9 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
             // TODO this looks like a hack in the original code, since OverlayTypeClass::Draw_It doesn't
             // clip to the tactical view as it should.
             // OverlayTypeClass::As_Reference(Overlay).Draw_It(x, y, OverlayFrame);
-            OverlayTypeClass &otc = OverlayTypeClass::As_Reference(Overlay);
-            g_isTheaterShape = otc.Is_Theater();
-            CC_Draw_Shape(otc.Get_Image_Data(),
+            otc = &OverlayTypeClass::As_Reference(Overlay);
+            g_isTheaterShape = otc->Is_Theater();
+            CC_Draw_Shape(otc->Get_Image_Data(),
                 OverlayFrame,
                 x + 12,
                 y + 12,
@@ -875,7 +876,99 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
                 DisplayClass::UnitShadow);
             g_isTheaterShape = false;
         }
+        if (g_InMapEditor) {
+            if (CellTag.Has_Valid_ID()) {
+                //crashes with a out of bounds write
+                /*
+                Fancy_Text_Print(CellTag->Class_Of().Get_Name(),
+                    x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    &ColorRemaps[REMAP_2],
+                    0,
+                    TPF_CENTER | TPF_OUTLINE | TPF_EDITOR);
+                */
+            }
+            // Waypoints
+            if (Bit16) {
+                char v43[4];
+                int i;
+                for (i = 0;; ++i) {
+                    if (i >= 98) {
+                        goto LABEL_58;
+                    }
+                    if (CellNumber == Scen.Get_Waypoint(i)) {
+                        break;
+                    }
+                }
+                if (i >= 0x1A) {
+                    v43[0] = i / 0x1A + 0x40;
+                    v43[1] = i % 0x1A + 0x41;
+                    v43[2] = 0;
+                } else {
+                    v43[0] = i + 0x41;
+                    v43[1] = 0;
+                }
+                Fancy_Text_Print(v43,
+                    x + Map.Tac_Offset_X() + 12,
+                    y + Map.Tac_Offset_Y() + 9,
+                    &ColorRemaps[REMAP_2],
+                    0,
+                    TPF_CENTER | TPF_OUTLINE | TPF_EDITOR);
+            LABEL_58:
+                if (CellNumber == Scen.Get_Waypoint(98)) {
+                    Fancy_Text_Print("Home",
+                        x + Map.Tac_Offset_X(),
+                        y + Map.Tac_Offset_Y() + 17,
+                        &ColorRemaps[REMAP_5],
+                        0,
+                        TPF_OUTLINE | TPF_EDITOR);
+                }
+                if (CellNumber == Scen.Get_Waypoint(99)) {
+                    Fancy_Text_Print("Reinf",
+                        x + Map.Tac_Offset_X(),
+                        y + Map.Tac_Offset_Y() + 17,
+                        &ColorRemaps[REMAP_5],
+                        0,
+                        TPF_OUTLINE | TPF_EDITOR);
+                }
+            }
+            /*
+            /////////////////////
+            if (Bit32) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_LTCYAN);
+            }
+            // just to find out what it is
+            if (Bit128) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_PURPLE);
+            }
+            // just to find out what it is
 
+            if (Bit1) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_GREEN);
+            }
+
+            // just to find out what it is
+            if (PlacementCheck) {
+                g_logicPage->Draw_Rect(x + Map.Tac_Offset_X(),
+                    y + Map.Tac_Offset_Y(),
+                    x + Map.Tac_Offset_X() + 23,
+                    y + Map.Tac_Offset_Y() + 23,
+                    COLOR_PINK);
+            }
+            */
+        }
         if (PlacementCheck) {
             SpeedType speed = SPEED_NONE;
 
@@ -905,37 +998,46 @@ void CellClass::Draw_It(int x, int y, BOOL flag) const
                 WindowList[WINDOW_TACTICAL].W,
                 WindowList[WINDOW_TACTICAL].H);
 
-#if 0 // TODO Edwin map stuff.
-            if (g_Debug_Placement_Ghosts) {
-                if (Map.Pending_ObjectType() != nullptr) {
-                    switch (Map.Pending_ObjectType()->What_Am_I()) {
-                        case RTTI_VESSEL:
-                            // TODO
+            // draws pending terrain object
+            if (g_InMapEditor && Map.Pending_ObjectType() != nullptr) {
+                switch (Map.Pending_ObjectType()->What_Am_I()) {
+                    case RTTI_OVERLAYTYPE:
+                        OverlayTypeClass::As_Reference(
+                            reinterpret_cast<OverlayTypeClass *>(Map.Pending_ObjectType())->Get_Type())
+                            .Draw_It(x, y, OverlayFrame);
+                        break;
+                    case RTTI_SMUDGETYPE:
+                        SmudgeTypeClass::As_Reference(
+                            reinterpret_cast<SmudgeTypeClass *>(Map.Pending_ObjectType())->Get_Type())
+                            .Draw_It(x, y, SmudgeFrame);
 
-                        case RTTI_BUILDING:
-                            // TODO
+                        break;
+                    // this seems to be what Beta does, this case probably isn't proper for final RA
+                    case RTTI_TEMPLATETYPE:
+                        tt = &TemplateTypeClass::As_Reference(
+                            reinterpret_cast<TemplateTypeClass *>(Map.Pending_ObjectType())->Get_Type());
+                        if (Map.Pending_ObjectType()->Get_Image_Data() != nullptr) {
+                            GraphicViewPortClass remap(g_logicPage->Get_Graphic_Buffer(),
+                                g_logicPage->Get_XPos() + WindowList[WINDOW_TACTICAL].X,
+                                g_logicPage->Get_YPos() + WindowList[WINDOW_TACTICAL].Y,
+                                WindowList[WINDOW_TACTICAL].W,
+                                WindowList[WINDOW_TACTICAL].H);
 
-                        case RTTI_UNIT:
-                            // TODO
-
-                        case RTTI_INFANTRY:
-                            // TODO
-
-                        case RTTI_AIRCRAFT:
-                            // TODO
-                        case RTTI_OVERLAYTYPE:
-                            break;
-                        case RTTI_SMUDGETYPE:
-                            break;
-                        case RTTI_TEMPLATETYPE:
-                            break;
-
-                        default:
-                            break;
-                    }
+                            g_logicPage->Draw_Stamp(tt->Get_Image_Data(),
+                                icon_num,
+                                x,
+                                y,
+                                nullptr,
+                                WindowList[WINDOW_TACTICAL].X,
+                                WindowList[WINDOW_TACTICAL].Y,
+                                WindowList[WINDOW_TACTICAL].W,
+                                WindowList[WINDOW_TACTICAL].H);
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
-#endif
         }
 
         if (HasFlag) {

@@ -59,3 +59,13 @@ void TeamTypeClass::Decode_Pointers()
         m_Content[i].Object = reinterpret_cast<ObjectTypeClass *>(As_TechnoType((uintptr_t)m_Content[i].Object));
     }
 }
+
+void TeamTypeClass::Write_INI(GameINIClass &ini)
+{
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x0056076C);
+    return func(ini);
+#else
+
+#endif
+}

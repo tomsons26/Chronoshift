@@ -361,3 +361,13 @@ uint8_t *const TerrainClass::Radar_Icon(short cellnum) const
     }
     return nullptr;
 }
+
+void TerrainClass::Write_INI(GameINIClass &ini)
+{
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x0056AD6C);
+    return func(ini);
+#else
+
+#endif
+}

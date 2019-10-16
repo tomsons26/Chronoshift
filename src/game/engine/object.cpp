@@ -306,7 +306,18 @@ BOOL ObjectClass::Render(BOOL force_render)
     if (Map.Coord_To_Pixel(render_coord, render_x_pos, render_y_pos)) {
 
         Draw_It(render_x_pos, render_y_pos, WINDOW_TACTICAL);
-
+        if (g_InMapEditor && m_AttachedTrigger.Is_Valid()) {
+            //crashes with a out of bounds write
+            /*
+            Fancy_Text_Print(m_AttachedTrigger->Class_Of().Get_Name(),
+                render_x_pos + WinX,
+                render_y_pos,
+                &ColorRemaps[REMAP_2],
+                0,
+                TPF_CENTER | TPF_NOSHADOW | TPF_6PT);
+            }
+            */
+        }
         //if (/*g_Debug_Head_To*/) {
 
             if (m_Selected) {

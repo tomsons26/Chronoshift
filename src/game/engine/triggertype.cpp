@@ -87,3 +87,23 @@ TriggerTypeClass *TriggerTypeClass::As_Pointer(TriggerType type)
 {
     return type != TRIGGER_NONE && type < g_TriggerTypes.Count() ? &g_TriggerTypes[type] : nullptr;
 }
+
+/**
+ * @brief
+ *
+ * @address 0x00597118 (beta)
+ */
+int TriggerTypeClass::Edit()
+{
+    return 0;
+}
+
+void TriggerTypeClass::Write_INI(GameINIClass &ini)
+{
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x0056D640);
+    return func(ini);
+#else
+
+#endif
+}

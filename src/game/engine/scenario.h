@@ -41,6 +41,8 @@ enum ScenarioPlayerEnum
     SCEN_PLAYER_GREECE,
     SCEN_PLAYER_USSR,
     SCEN_PLAYER_SPECIAL,
+    SCEN_PLAYER_4,
+    SCEN_PLAYER_5,
 };
 
 enum ScenarioDirEnum
@@ -62,6 +64,9 @@ enum ScenarioVarEnum
 
 class ScenarioClass
 {
+    friend int Read_Scenario_INI(const char *, int);
+    friend void Write_Scenario_INI(const char *);
+
 public:
     ScenarioClass();
 
@@ -90,12 +95,14 @@ public:
     cell_t Get_Waypoint(int waypoint_num) const { return Waypoints[waypoint_num]; }
     void Set_Waypoint(int waypoint_num, cell_t cell) { Waypoints[waypoint_num] = cell; }
     void Set_Carry_Over_Money(fixed_t value) { CarryOverMoney = value; }
+    void Set_Carry_Over_Money_Amount(int value) { CarryOverMoneyAmount = value; }
     cell_t Get_View(int index) const { return Views[index]; }
     void Set_View(int index, cell_t cell) { Views[index] = cell; }
     void Set_Bridge_Count(int count) { BridgeCount = count; }
 
     BOOL Get_field_7CF() const { return field_7CF; }
     BOOL Get_field_7D3() const { return field_7D3; }
+    int Get_CarryOver_Percent() const { return CarryOverPercent; }
 
 #ifdef GAME_DLL
     void Hook_Set_Scenario_Name1(const char *scen_name) { Set_Scenario_Name(scen_name); }

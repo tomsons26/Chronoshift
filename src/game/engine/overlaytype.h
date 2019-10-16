@@ -110,6 +110,8 @@ public:
     BOOL Is_Ore() const { return Ore; }
     BOOL Is_Theater() const { return Theater; }
 
+    OverlayType Get_Type() const { return Type; }
+
     static void Init_Heap();
     static void Init(TheaterType theater);
     static void One_Time() {}

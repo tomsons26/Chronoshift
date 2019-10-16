@@ -1974,6 +1974,11 @@ void HouseClass::Read_INI(GameINIClass &ini)
  */
 void HouseClass::Write_INI(GameINIClass &ini)
 {
+// wrapped for now cause writes corrupt data
+#ifdef GAME_DLL
+    void (*func)(GameINIClass &) = reinterpret_cast<void (*)(GameINIClass &)>(0x004DDEB0);
+    return func(ini);
+#else
     for (HousesType house = HOUSES_FIRST; house < HOUSES_COUNT; ++house) {
         char const *house_name = HouseTypeClass::Name_From(house);
         ini.Clear(house_name);
@@ -1997,6 +2002,7 @@ void HouseClass::Write_INI(GameINIClass &ini)
             }
         }
     }
+#endif
 }
 
 /**
