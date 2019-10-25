@@ -18,9 +18,11 @@
 #include "coord.h"
 #include "display.h"
 #include "drawshape.h"
+#include "gbuffer.h"
 #include "globals.h"
 #include "house.h"
 #include "remap.h"
+#include "rules.h"
 #include "weapontype.h"
 #include <algorithm>
 
@@ -203,6 +205,104 @@ int TechnoClass::Exit_Object(TechnoClass *object)
 
 void TechnoClass::Draw_It(int x, int y, WindowNumberType window) const
 {
+    m_Door.Clear_To_Redraw();
+    if (m_Selected) {
+        GraphicViewPortClass rect(g_logicPage->Get_Graphic_Buffer(),
+            g_logicPage->Get_XPos() + WindowList[WINDOW_TACTICAL].X,
+            g_logicPage->Get_YPos() + WindowList[WINDOW_TACTICAL].Y,
+            WindowList[WINDOW_TACTICAL].W,
+            WindowList[WINDOW_TACTICAL].H);
+
+        if (m_RTTI == RTTI_INFANTRY) {
+            y -= 6;
+        }
+        if (m_RTTI == RTTI_BUILDING
+            && reinterpret_cast<const BuildingTypeClass &>(Class_Of()).What_Type() == BUILDING_BARR) {
+            y -= 5;
+        }
+
+        int dim_w = 0;
+        int dim_h = 0;
+        Class_Of().Dimensions(dim_w, dim_h);
+
+        // draw health bar
+        if (m_Health) {
+            if (Get_Owner_House()->Is_Ally(g_PlayerPtr) || Rule.Show_Enemy_Health()) {
+                fixed_t health = Health_Ratio();
+                int bar_left = x - dim_w / 2;
+                int bar_top = y - dim_h / 2;
+                // fade background of health bar
+                rect.Remap(bar_left + 1, bar_top + 1, dim_w - 1, 2, (unsigned char *)DisplayClass::FadingShade);
+                // draw health bar bounding box
+                rect.Draw_Rect(bar_left, bar_top, bar_left + dim_w - 1, bar_top + 3, 12);
+                int health_w = std::clamp((dim_w - 2) * health, 1, dim_w - 2);
+                char healthcolor = 4;
+                if (health <= Rule.Condition_Yellow()) {
+                    healthcolor = 5;
+                }
+                if (health <= Rule.Condition_Red()) {
+                    healthcolor = 8;
+                }
+                // draw health bar itself
+                rect.Fill_Rect(bar_left + 1, bar_top + 1, bar_left + health_w, bar_top + 2, healthcolor);
+            }
+        }
+        // draw selection box
+        // it is selected already tho...
+        if (m_Selected) {
+            int center_x = dim_w / 2;
+            int center_y = dim_h / 2;
+            int line_w = dim_w / 5;
+            int line_h = dim_h / 5;
+
+            int adj_y = 0;
+            // if we are showing the health bar nudge the selection box a bit
+            if (Get_Owner_House()->Is_Ally(g_PlayerPtr) || Rule.Show_Enemy_Health()) {
+                adj_y = 4;
+            }
+            //this seems useless cause we did that already....
+            if (m_RTTI == RTTI_VESSEL) {
+                center_x = dim_w / 2;
+            }
+            // left center
+            int left = x - center_x;
+            // right center
+            int right = x + center_x;
+            // top center
+            int top = y + adj_y - center_y;
+            // bottom center
+            int bottom = y + center_y;
+
+            // left horizonal line
+            int l_1 = left + line_w;
+            // right horizonal line
+            int r_1 = right - line_w;
+            // top vertical line
+            int t_1 = top + line_h;
+            // bottom vertical line
+            int b_1 = bottom - line_h;
+
+            // draw top left
+            rect.Draw_Line(left, top, l_1, top, COLOR_WHITE);
+            rect.Draw_Line(left, top, left, t_1, COLOR_WHITE);
+
+            // draw top right
+            rect.Draw_Line(right, top, r_1, top, COLOR_WHITE);
+            rect.Draw_Line(right, top, right, t_1, COLOR_WHITE);
+
+            // draw bottom right
+            rect.Draw_Line(right, bottom, r_1, bottom, COLOR_WHITE);
+            rect.Draw_Line(right, bottom, right, b_1, COLOR_WHITE);
+
+            // draw bottom left
+            rect.Draw_Line(left, bottom, l_1, bottom, COLOR_WHITE);
+            rect.Draw_Line(left, bottom, left, b_1, COLOR_WHITE);
+
+            if (Get_Owner_House()->Is_Ally(g_PlayerPtr) || Get_Owner_House()->Spied_My_Radar(g_PlayerPtr)) {
+                Draw_Pips((x - center_x) + 5, (y + center_y) - 3, window);
+            }
+        }
+    }
 }
 
 void TechnoClass::Hidden()

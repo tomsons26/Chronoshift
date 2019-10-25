@@ -906,6 +906,7 @@ void Setup_Hooks()
 
     Hook_Function(0x004624A0, *CarryoverClass::Hook_Ctor);
     //Hook_Function(0x004625E8, *CarryoverClass::Create);
+    Hook_Function(0x005618E4, *TechnoClass::Wrap_Draw_It);
 
 #endif
 }

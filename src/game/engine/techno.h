@@ -187,6 +187,10 @@ public:
     {
         TechnoClass::Techno_Draw_It(shape, frame, x, y, window, dir, scale);
     }
+    void Wrap_Draw_It(int x, int y, WindowNumberType window)
+    {
+        TechnoClass::Draw_It(x, y, window);
+    }
 #endif
 
 protected:
@@ -199,7 +203,7 @@ protected:
     FlasherClass m_Flasher;
     StageClass m_AnimStage;
     CargoClass m_Cargo;
-    DoorClass m_Door;
+    mutable DoorClass m_Door;
     uint16_t m_KillCount;
 #ifndef CHRONOSHIFT_NO_BITFIELDS
     BOOL m_IsUseless : 1; // & 1
