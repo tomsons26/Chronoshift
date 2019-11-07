@@ -242,7 +242,7 @@ ThreatType WeaponTypeClass::Allowed_Threats() const
     }
 
     if (m_Projectile->Is_Anti_Ground()) {
-        threat |= (THREAT_INFANTRY | THREAT_VEHICLE | THREAT_BUILDING | THREAT_VESSEL);
+        threat |= THREAT_GROUND | THREAT_VESSELS;
     }
 
     return threat;

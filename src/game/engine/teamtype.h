@@ -64,6 +64,11 @@ public:
     TeamMissionClass(TeamMissionType mission, int value = 0) : m_TMission(mission) {}
     ~TeamMissionClass(void) {}
 
+    TeamMissionType Get_Team_Mission() { return m_TMission; }
+    int32_t Get_Data() { return u_TMissionData.m_Data; }
+    cell_t Get_Cell() { return u_TMissionData.m_Cell; }
+    QuarryType Get_Quarry() { return u_TMissionData.m_Quarry; }
+
 protected:
     TeamMissionType m_TMission; // 0x00
 
@@ -71,6 +76,9 @@ protected:
     union TMissionDataUnion
     { // 0x01
         int32_t m_Data; // General data holder
+        MissionType m_Mission;
+        FormationType m_Formation;
+        QuarryType m_Quarry;
         cell_t m_Cell;
     } u_TMissionData;
 
@@ -113,6 +121,8 @@ public:
 
     BOOL Avoid_Threats() const { return m_AvoidThreats; }
 
+    TeamMissionClass &Get_Team_Mission(int mission) { return m_Missions[mission]; }
+
     static void Init();
 
     static void Read_Scenario_INI(GameINIClass &ini);
@@ -137,7 +147,7 @@ protected:
     BOOL m_Reinforce : 1; // 32
 #else
     bool m_IsActive;
-    bool m_AvoidThreats; // Always take the safest route, even if it’s a detour.
+    bool m_AvoidThreats; // Always take the safest route, even if itï¿½s a detour.
     bool m_Suicide; // Charge at target ignoring enemy units/enemy fire.
     bool m_Autocreate; // Team is only used by autocreate AI (produced taskforces).
     bool m_Prebuild; // Prebuild team members before creating.

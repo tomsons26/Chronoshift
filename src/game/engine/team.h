@@ -44,7 +44,12 @@ public:
     void operator delete(void *ptr, void *place) {}
 #endif
 
+    void Assign_Mission_Target(target_t target);
     BOOL Remove(FootClass *object, int a2 = -1);
+    void Coordinate_Attack();
+
+    BOOL TMission_Attack();
+    FootClass *Fetch_A_Leader();
 
     void Code_Pointers();
     void Decode_Pointers();
