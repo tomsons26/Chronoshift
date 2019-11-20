@@ -20,6 +20,7 @@
 #define TDROPLIST_H
 
 #include "always.h"
+#include "dialog.h"
 #include "edit.h"
 #include "tlist.h"
 #include "shapebtn.h"
@@ -60,6 +61,7 @@ public:
 
     void Expand();
     void Collapse();
+    T *Get_Entries() { return m_DropList.Get_Entries(); }
 
 protected:
 #ifndef CHRONOSHIFT_NO_BITFIELDS
@@ -104,7 +106,7 @@ TDropListClass<T>::TDropListClass(int id, char *text_buff, int text_size, TextPr
     m_DropList(0, x, y + Get_Build_Frame_Height(down_btn_shape), w + Get_Build_Frame_Width(down_btn_shape), h, style,
         up_btn_shape, down_btn_shape)
 {
-    Fancy_Text_Print(nullptr, 0, 0, nullptr, COLOR_TBLACK, TextStyle); // EDWIN doesnt do this...
+    Fancy_Text_Print(nullptr, 0, 0, nullptr, COLOR_TBLACK, m_TextStyle); // EDWIN doesnt do this...
     m_DropButton.Make_Peer(*this);
     m_DropList.Make_Peer(*this);
 }
@@ -228,7 +230,7 @@ void TDropListClass<T>::Peer_To_Peer(unsigned flags, KeyNumType &key, ControlCla
     if (&peer == &m_DropButton && flags & MOUSE_LEFT_RLSE) {
         if (m_IsExpanded) {
             Collapse();
-            key = (KeyNumType)(ID | KN_BUTTON);
+            key = (KeyNumType)(m_ID | KN_BUTTON);
         } else {
             Expand();
         }
@@ -236,9 +238,9 @@ void TDropListClass<T>::Peer_To_Peer(unsigned flags, KeyNumType &key, ControlCla
 
     if (&peer == &m_DropList) {
         T item = m_DropList.Get_Item(Current_Index());
-        strncpy(Text, item->Get_Name(), MaxTextLength);
+        strlcpy(m_Text, item->Get_Name(), m_MaxTextLength);
         Flag_To_Redraw();
-        key = (KeyNumType)(ID | KN_BUTTON);
+        key = (KeyNumType)(m_ID | KN_BUTTON);
     }
 }
 
@@ -265,7 +267,7 @@ void TDropListClass<T>::Set_Position(int x, int y)
 {
     GadgetClass::Set_Position(x, y);
     m_DropList.Set_Position(x, y + Get_Build_Frame_Height(m_DropButton.Get_Shape()));
-    m_DropButton.Set_Position(x + Width, y);
+    m_DropButton.Set_Position(x + m_Width, y);
 }
 
 /**
@@ -278,7 +280,7 @@ template<typename T>
 int TDropListClass<T>::Add_Item(T item)
 {
     T it = m_DropList.Get_Item(Current_Index());
-    strncpy(Text, it->Get_Name(), MaxTextLength);
+    strlcpy(m_Text, it->Get_Name(), m_MaxTextLength);
     Flag_To_Redraw();
 
     return m_DropList.Add_Item(it);
@@ -313,11 +315,11 @@ template<typename T>
 void TDropListClass<T>::Set_Selected_Index(int index)
 {
     if (index > m_DropList.Count()) {
-        *Text = '\0';
+        *m_Text = '\0';
     } else {
         m_DropList.Set_Selected_Index(index);
         T item = m_DropList.Get_Item(Current_Index());
-        strncpy(Text, item->Get_Name(), MaxTextLength);
+        strlcpy(m_Text, item->Get_Name(), m_MaxTextLength);
     }
 }
 
@@ -372,9 +374,9 @@ template<typename T>
 void TDropListClass<T>::Expand()
 {
     if (!m_IsExpanded) {
-        m_DropList.Set_XPos(XPos);
-        m_DropList.Set_YPos(YPos + 18);
-        m_DropList.Set_Width(Width);
+        m_DropList.Set_XPos(m_XPos);
+        m_DropList.Set_YPos(m_YPos + 18);
+        m_DropList.Set_Width(m_Width);
         m_DropList.Set_Height(m_DropHeight);
         m_DropList.Add(Head_Of_List());
         m_DropList.Flag_To_Redraw();
