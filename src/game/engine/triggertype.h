@@ -89,6 +89,8 @@ public:
     TriggerClass *Find_Or_Make();
     void Detach(target_t target, int unk);
     AttachType Attaches_To();
+    BOOL Edit();
+    void Draw_It(int index, int x, int y, int x_max, int y_max, BOOL selected, TextPrintType style);
     const TEventClass &Get_Event_One() const { return m_EventOne; }
     const TEventClass &Get_Event_Two() const { return m_EventTwo; }
     const TActionClass &Get_Action_One() const { return m_ActionOne; }
@@ -108,6 +110,7 @@ public:
 private:
     void Fill_In(const char *name, char *options);
     void Build_INI_Entry(char *buffer);
+    const char *Description();
 
 protected:
 #ifndef CHRONOSHIFT_NO_BITFIELDS

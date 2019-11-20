@@ -14,6 +14,8 @@
  *            LICENSE
  */
 #include "tevent.h"
+#include "gadget.h"
+#include "gbuffer.h"
 #include "globals.h"
 #include "house.h"
 #include "object.h"
@@ -23,10 +25,48 @@
 #include <cstdlib>
 #include <cstring>
 
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 using std::atoi;
 using std::sprintf;
 using std::strcmp;
 using std::strtok;
+
+EventChoiceClass EventChoiceClass::s_EventChoices[TEVENT_COUNT] = { EventChoiceClass(TEVENT_NO_EVENT),
+    EventChoiceClass(TEVENT_ENTERED_BY),
+    EventChoiceClass(TEVENT_SPIED_BY),
+    EventChoiceClass(TEVENT_THIEVED_BY),
+    EventChoiceClass(TEVENT_DISCOVERED_BY_PLAYER),
+    EventChoiceClass(TEVENT_HOUSE_DISCOVERED),
+    EventChoiceClass(TEVENT_ATTACKED),
+    EventChoiceClass(TEVENT_DESTROYED),
+    EventChoiceClass(TEVENT_ANY),
+    EventChoiceClass(TEVENT_DESTROYED_ALL_UNITS),
+    EventChoiceClass(TEVENT_DESTROYED_ALL_BUILDINGS),
+    EventChoiceClass(TEVENT_DESTROYED_ALL),
+    EventChoiceClass(TEVENT_CREDIT_EXCEED),
+    EventChoiceClass(TEVENT_ELAPSED_TIME),
+    EventChoiceClass(TEVENT_TIMER_EXPIRED),
+    EventChoiceClass(TEVENT_DESTROYED_BUILDINGS),
+    EventChoiceClass(TEVENT_DESTROYED_UNITS),
+    EventChoiceClass(TEVENT_NO_FACTORIES),
+    EventChoiceClass(TEVENT_CIVS_EVACUATED),
+    EventChoiceClass(TEVENT_BUILD_BUILDING),
+    EventChoiceClass(TEVENT_BUILD_UNIT),
+    EventChoiceClass(TEVENT_BUILD_INFANTRY),
+    EventChoiceClass(TEVENT_BUILD_AIRCRAFT),
+    EventChoiceClass(TEVENT_LEAVES_MAP),
+    EventChoiceClass(TEVENT_ZONE_ENTERED),
+    EventChoiceClass(TEVENT_CROSSED_HORIZ_LINE),
+    EventChoiceClass(TEVENT_CROSSED_VERT_LINE),
+    EventChoiceClass(TEVENT_GLOBAL_SET),
+    EventChoiceClass(TEVENT_GLOBAL_CLEAR),
+    EventChoiceClass(TEVENT_DESTROYED_ALL_FAKES),
+    EventChoiceClass(TEVENT_LOW_POWER),
+    EventChoiceClass(TEVENT_ATTACHED_BRIDGE_DESTROYED),
+    EventChoiceClass(TEVENT_BUILDING_EXISTS) };
 
 const TEventClass::EventTextStruct TEventClass::s_EventText[TEVENT_COUNT] = {
     { "-No Event-", "This is a null event. There is no need to ever use this in a real trigger." },
@@ -392,7 +432,7 @@ void TEventClass::Read_INI()
             tok = strtok(nullptr, ",");
 
             if (tok != nullptr) {
-                if (Event_Needs(m_Type) == NEED_TEAM) {
+                if (Event_Needs() == NEED_TEAM) {
                     m_TeamType = &g_TeamTypes[atoi(tok)];
                 } else {
                     m_IntegerValue = atoi(tok);
@@ -507,9 +547,9 @@ const char *TEventClass::Name_From_Event(TEventType tevent)
     return s_EventText[tevent].m_Name;
 }
 
-NeedType TEventClass::Event_Needs(TEventType tevent)
+NeedType TEventClass::Event_Needs()
 {
-    switch (tevent) {
+    switch (m_Type) {
         case TEVENT_NO_EVENT:
         case TEVENT_SPIED_BY:
         case TEVENT_DISCOVERED_BY_PLAYER:
@@ -558,80 +598,27 @@ NeedType TEventClass::Event_Needs(TEventType tevent)
     return NEED_NOTHING;
 }
 
-AttachType TEventClass::Attaches_To(TEventType tevent)
+void EventChoiceClass::Draw_It(int index, int x, int y, int x_max, int y_max, BOOL selected, TextPrintType style) const
 {
-    AttachType ret = ATTACH_NONE;
+    static int _tabs[] = { 13, 40 };
+    RemapControlType *remapper = GadgetClass::Get_Color_Scheme();
 
-    switch (tevent) {
-        case TEVENT_NO_EVENT:
-        case TEVENT_ENTERED_BY:
-        case TEVENT_DISCOVERED_BY_PLAYER:
-        case TEVENT_ANY:
-        case TEVENT_ZONE_ENTERED:
-        case TEVENT_CROSSED_HORIZ_LINE:
-        case TEVENT_CROSSED_VERT_LINE:
-            ret = ATTACH_CELL;
-        default:
-            break;
+    if ((style & TPF_FONTS) == TPF_6PT_GRAD || (style & TPF_FONTS) == TPF_EDITOR) {
+        if (selected) {
+            style |= TPF_USE_BRIGHT;
+            g_logicPage->Fill_Rect(x, y, ((x + x_max) - 1), ((y + y_max) - 1), remapper->WindowPalette[0]);
+        } else if (!(style & TPF_USE_GRAD_PAL)) {
+            style |= TPF_USE_MEDIUM;
+        }
+    } else {
+        remapper = (selected ? &ColorRemaps[REMAP_10] : &ColorRemaps[REMAP_5]);
     }
 
-    switch (tevent) {
-        case TEVENT_NO_EVENT:
-        case TEVENT_ENTERED_BY:
-        case TEVENT_SPIED_BY:
-        case TEVENT_DISCOVERED_BY_PLAYER:
-        case TEVENT_ATTACKED:
-        case TEVENT_DESTROYED:
-        case TEVENT_ANY:
-            ret |= ATTACH_OBJECT;
-        default:
-            break;
-    }
+    Conquer_Clip_Text_Print(TEventClass::Name_From_Event(m_Event), x, y, remapper, COLOR_TBLACK, style, x_max, _tabs);
+}
 
-    switch (tevent) {
-        case TEVENT_ANY:
-        case TEVENT_ZONE_ENTERED:
-            ret |= ATTACH_MAP;
-        default:
-            break;
-    }
-
-    switch (tevent) {
-        case TEVENT_THIEVED_BY:
-        case TEVENT_HOUSE_DISCOVERED:
-        case TEVENT_ANY:
-        case TEVENT_DESTROYED_ALL_UNITS:
-        case TEVENT_DESTROYED_ALL_BUILDINGS:
-        case TEVENT_DESTROYED_ALL:
-        case TEVENT_CREDIT_EXCEED:
-        case TEVENT_DESTROYED_BUILDINGS:
-        case TEVENT_DESTROYED_UNITS:
-        case TEVENT_NO_FACTORIES:
-        case TEVENT_CIVS_EVACUATED:
-        case TEVENT_BUILD_BUILDING:
-        case TEVENT_BUILD_UNIT:
-        case TEVENT_BUILD_INFANTRY:
-        case TEVENT_BUILD_AIRCRAFT:
-        case TEVENT_DESTROYED_ALL_FAKES:
-        case TEVENT_LOW_POWER:
-        case TEVENT_BUILDING_EXISTS:
-            ret |= ATTACH_HOUSE;
-        default:
-            break;
-    }
-
-    switch (tevent) {
-        case TEVENT_ANY:
-        case TEVENT_ELAPSED_TIME:
-        case TEVENT_TIMER_EXPIRED:
-        case TEVENT_LEAVES_MAP:
-        case TEVENT_GLOBAL_SET:
-        case TEVENT_GLOBAL_CLEAR:
-        case TEVENT_ATTACHED_BRIDGE_DESTROYED:
-            ret |= ATTACH_LOGIC;
-        default:
-            break;
-    }
-
-    return ret;
+int EventChoiceClass::Comp(const void *a, const void *b)
+{
+    return strcasecmp(TEventClass::Name_From_Event((*(const EventChoiceClass **)a)->m_Event),
+        TEventClass::Name_From_Event((*(const EventChoiceClass **)a)->m_Event));
 }

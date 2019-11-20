@@ -44,6 +44,44 @@
 
 using std::sprintf;
 
+ActionChoiceClass ActionChoiceClass::s_ActionChoices[TACTION_COUNT] = { ActionChoiceClass(TACTION_NO_ACTION),
+    ActionChoiceClass(TACTION_WINNER_IS),
+    ActionChoiceClass(TACTION_LOSER_IS),
+    ActionChoiceClass(TACTION_PROD_BEGIN),
+    ActionChoiceClass(TACTION_CREATE_TEAM),
+    ActionChoiceClass(TACTION_DESTROY_ALL_TEAMS),
+    ActionChoiceClass(TACTION_ALL_TO_HUNT),
+    ActionChoiceClass(TACTION_REINFORCE_TEAM),
+    ActionChoiceClass(TACTION_DROP_FLARE),
+    ActionChoiceClass(TACTION_FIRE_SALE),
+    ActionChoiceClass(TACTION_PLAY_MOVIE),
+    ActionChoiceClass(TACTION_DISPLAY_TEXT),
+    ActionChoiceClass(TACTION_DESTROY_TRIGGER),
+    ActionChoiceClass(TACTION_ENABLE_AUTOCREATE),
+    ActionChoiceClass(TACTION_CHANGE_HOUSE),
+    ActionChoiceClass(TACTION_ALLOW_WIN),
+    ActionChoiceClass(TACTION_REVEAL_MAP),
+    ActionChoiceClass(TACTION_REVEAL_WAYPOINT),
+    ActionChoiceClass(TACTION_REVEAL_WAYPOINT_ZONE),
+    ActionChoiceClass(TACTION_PLAY_SOUND_EFFECT),
+    ActionChoiceClass(TACTION_PLAY_MUSIC_THEME),
+    ActionChoiceClass(TACTION_PLAY_SPEECH),
+    ActionChoiceClass(TACTION_FORCE_TRIGGER),
+    ActionChoiceClass(TACTION_TIMER_START),
+    ActionChoiceClass(TACTION_TIMER_STOP),
+    ActionChoiceClass(TACTION_TIMER_EXTEND),
+    ActionChoiceClass(TACTION_TIMER_REDUCE),
+    ActionChoiceClass(TACTION_TIMER_SET),
+    ActionChoiceClass(TACTION_GLOBAL_SET),
+    ActionChoiceClass(TACTION_GLOBAL_CLEAR),
+    ActionChoiceClass(TACTION_AUTO_BASE_AI),
+    ActionChoiceClass(TACTION_GROW_SHROUD),
+    ActionChoiceClass(TACTION_DESTROY_ATTACHED),
+    ActionChoiceClass(TACTION_ONE_TIME_SUPER),
+    ActionChoiceClass(TACTION_REPEATING_SUPER),
+    ActionChoiceClass(TACTION_PREFERRED_TARGET),
+    ActionChoiceClass(TACTION_LAUNCH_NUKES) };
+
 TActionClass::ActionTextStruct TActionClass::s_ActionText[TACTION_COUNT] = {
     { "-No Action-",
         "This is a null action. It will do nothing and is equivalent to not having an action at all. Why use it?" },
@@ -482,9 +520,9 @@ const char *TActionClass::Name_From_Action(TActionType taction)
 /**
  * Determines what the action type needs to be provided with.
  */
-NeedType TActionClass::Action_Needs(TActionType taction)
+NeedType TActionClass::Action_Needs()
 {
-    switch (taction) {
+    switch (m_Type) {
         case TACTION_WINNER_IS:
         case TACTION_LOSER_IS:
         case TACTION_PROD_BEGIN:
@@ -542,4 +580,29 @@ NeedType TActionClass::Action_Needs(TActionType taction)
     }
 
     return NEED_NOTHING;
+}
+
+void ActionChoiceClass::Draw_It(int index, int x, int y, int x_max, int y_max, BOOL selected, TextPrintType style) const
+{
+    static int _tabs[] = { 13, 40 };
+    RemapControlType *remapper = GadgetClass::Get_Color_Scheme();
+
+    if ((style & TPF_FONTS) == TPF_6PT_GRAD || (style & TPF_FONTS) == TPF_EDITOR) {
+        if (selected) {
+            style |= TPF_USE_BRIGHT;
+            g_logicPage->Fill_Rect(x, y, ((x + x_max) - 1), ((y + y_max) - 1), remapper->WindowPalette[0]);
+        } else if (!(style & TPF_USE_GRAD_PAL)) {
+            style |= TPF_USE_MEDIUM;
+        }
+    } else {
+        remapper = (selected ? &ColorRemaps[REMAP_10] : &ColorRemaps[REMAP_5]);
+    }
+
+    Conquer_Clip_Text_Print(TActionClass::Name_From_Action(m_Action), x, y, remapper, COLOR_TBLACK, style, x_max, _tabs);
+}
+
+int ActionChoiceClass::Comp(const void *a, const void *b)
+{
+    return strcasecmp(TActionClass::Name_From_Action((*(const ActionChoiceClass **)a)->m_Action),
+        TActionClass::Name_From_Action((*(const ActionChoiceClass **)a)->m_Action));
 }

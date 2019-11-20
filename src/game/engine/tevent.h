@@ -21,6 +21,7 @@
 #include "always.h"
 #include "aircrafttype.h"
 #include "buildingtype.h"
+#include "dialog.h"
 #include "gameptr.h"
 #include "infantrytype.h"
 #include "teamtype.h"
@@ -96,9 +97,10 @@ private:
     TCountDownTimerClass<FrameTimerClass> m_DelayTimer;
 };
 
-
 class TEventClass
 {
+    friend TriggerTypeClass;
+
 public:
     TEventClass() : m_Type(TEVENT_NO_EVENT), m_TeamType(nullptr), m_IntegerValue(0) {}
     ~TEventClass() { m_TeamType = nullptr; }
@@ -109,6 +111,7 @@ public:
     void Build_INI_Entry(char *entry_buffer) const;
     void Read_INI();
     AttachType Attaches_To();
+    NeedType Event_Needs();
 
     void Code_Pointers() {}
     void Decode_Pointers() {}
@@ -117,9 +120,6 @@ public:
 
     static TEventType Event_From_Name(const char *name);
     static const char *Name_From_Event(TEventType tevent);
-    static NeedType Event_Needs(TEventType tevent);
-    static AttachType Attaches_To(TEventType tevent);
-
 
 protected:
     TEventType m_Type;
@@ -134,6 +134,23 @@ private:
     };
 
     static const EventTextStruct s_EventText[TEVENT_COUNT];
+};
+
+class EventChoiceClass
+{
+public:
+    EventChoiceClass(TEventType event) : m_Event(event) {}
+
+    void Draw_It(int index, int x, int y, int x_max, int y_max, BOOL selected, TextPrintType style) const;
+    const char *Get_Name() const { return TEventClass::Name_From_Event(m_Event); }
+
+    static int Comp(const void *a, const void *b);
+
+private:
+    TEventType m_Event;
+
+public:
+    static EventChoiceClass s_EventChoices[TEVENT_COUNT];
 };
 
 #endif // TEVENT_H
