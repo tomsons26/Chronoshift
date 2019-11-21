@@ -39,10 +39,14 @@ DEFINE_ENUMERATION_OPERATORS(TriggerType);
 enum PersistanceType
 {
     STATE_NONE = -1,
-    STATE_VOLATILE = 0, // Will only ever be activated once.
+    STATE_VOLATILE, // Will only ever be activated once.
     STATE_SEMI_PERSISTANT, // Will only trigger once the trigger event has all conditions have been met.
     STATE_PERSISTANT, // Will continue to repeat itself whenever its trigger event is true.
+    STATE_COUNT,
+    STATE_FIRST = 0,
 };
+
+DEFINE_ENUMERATION_OPERATORS(PersistanceType);
 
 enum EventLinkType
 {

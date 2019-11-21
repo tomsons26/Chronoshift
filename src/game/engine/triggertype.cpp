@@ -14,6 +14,7 @@
  *            LICENSE
  */
 #include "triggertype.h"
+#include "callback.h"
 #include "droplist.h"
 #include "gadget.h"
 #include "gamefile.h"
@@ -23,6 +24,7 @@
 #include "language.h"
 #include "movie.h"
 #include "tdroplist.h"
+#include "textbtn.h"
 #include "theme.h"
 #include <cstdio>
 #include <cstdlib>
@@ -145,6 +147,7 @@ AttachType TriggerTypeClass::Attaches_To()
 
 BOOL TriggerTypeClass::Edit()
 {
+    static const char *_perstext[] = { "Volatile", "Semi-persistent", "Persistent" };
     void *up_btn = GameMixFile::Retrieve("ebtn-up.shp");
     void *dn_btn = GameMixFile::Retrieve("ebtn-dn.shp");
 
@@ -583,6 +586,456 @@ BOOL TriggerTypeClass::Edit()
         ev_two_air_edit.Set_Selected_Index(0);
     } else {
         ev_two_air_edit.Set_Selected_Index(AircraftType(m_EventOne.m_IntegerValue));
+    }
+
+    // *** Editors for Units
+    // Setup value editor for event one.
+    char ev_one_unit_buf[35] = { 0 };
+    DropListClass ev_one_unit_edit(
+        135, ev_one_air_buf, sizeof(ev_one_unit_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 65, 95, 40, up_btn, dn_btn);
+
+    // Setup value editor for event two.
+    char ev_two_unit_buf[35] = { 0 };
+    DropListClass ev_two_unit_edit(
+        136, ev_two_air_buf, sizeof(ev_two_unit_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 87, 95, 40, up_btn, dn_btn);
+
+    // Populate the lists.
+    for (UnitType i = UNIT_FIRST; i < UNIT_COUNT; ++i) {
+        ev_one_unit_edit.Add_Item(Text_String(UnitTypeClass::As_Reference(i).Full_Name()));
+        ev_two_unit_edit.Add_Item(Text_String(UnitTypeClass::As_Reference(i).Full_Name()));
+    }
+
+    if (m_EventOne.Event_Needs() != NEED_UNIT) {
+        ev_one_unit_edit.Set_Selected_Index(0);
+    } else {
+        ev_one_unit_edit.Set_Selected_Index(UnitType(m_EventOne.m_IntegerValue));
+    }
+
+    if (m_EventTwo.Event_Needs() != NEED_UNIT) {
+        ev_two_unit_edit.Set_Selected_Index(0);
+    } else {
+        ev_two_unit_edit.Set_Selected_Index(UnitType(m_EventTwo.m_IntegerValue));
+    }
+
+    // *** Editors for Houses
+
+    // Setup value editor for event one.
+    char ev_one_house_buf[35] = { 0 };
+    DropListClass ev_one_house_edit(
+        119, ev_one_house_buf, sizeof(ev_one_house_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 65, 95, 40, up_btn, dn_btn);
+
+    // Setup value editor for event two.
+    char ev_two_house_buf[35] = { 0 };
+    DropListClass ev_two_house_edit(
+        120, ev_two_house_buf, sizeof(ev_two_house_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 87, 95, 40, up_btn, dn_btn);
+
+    // Setup value editor for action one.
+    char act_one_house_buf[35] = { 0 };
+    DropListClass act_one_house_edit(
+        121, act_one_house_buf, sizeof(act_one_house_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 120, 95, 40, up_btn, dn_btn);
+
+    // Setup value editor for action two.
+    char act_two_house_buf[35] = { 0 };
+    DropListClass act_two_house_edit(
+        122, act_two_house_buf, sizeof(act_two_house_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 142, 95, 40, up_btn, dn_btn);
+
+    // Populate the lists.
+    for (HousesType i = HOUSES_FIRST; i < HOUSES_COUNT; ++i) {
+        ev_one_house_edit.Add_Item(HouseTypeClass::As_Reference(i).Get_Name());
+        ev_two_house_edit.Add_Item(HouseTypeClass::As_Reference(i).Get_Name());
+        act_one_house_edit.Add_Item(HouseTypeClass::As_Reference(i).Get_Name());
+        act_two_house_edit.Add_Item(HouseTypeClass::As_Reference(i).Get_Name());
+    }
+
+    // Set selected index if any.
+    if (m_EventOne.Event_Needs() != NEED_HOUSE) {
+        ev_one_house_edit.Set_Selected_Index(0);
+    } else {
+        ev_one_house_edit.Set_Selected_Index(HousesType(m_EventOne.m_IntegerValue));
+    }
+
+    if (m_EventTwo.Event_Needs() != NEED_HOUSE) {
+        ev_two_house_edit.Set_Selected_Index(0);
+    } else {
+        ev_two_house_edit.Set_Selected_Index(HousesType(m_EventTwo.m_IntegerValue));
+    }
+
+    if (m_ActionOne.Action_Needs() != NEED_HOUSE) {
+        act_one_house_edit.Set_Selected_Index(0);
+    } else {
+        act_one_house_edit.Set_Selected_Index(HousesType(m_ActionOne.m_IntegerValue));
+    }
+
+    if (m_ActionTwo.Action_Needs() != NEED_HOUSE) {
+        act_two_house_edit.Set_Selected_Index(0);
+    } else {
+        act_two_house_edit.Set_Selected_Index(HousesType(m_ActionTwo.m_IntegerValue));
+    }
+
+    // *** Editors for Specials
+
+    // Setup value editor for action one.
+    char act_one_spec_buf[35] = { 0 };
+    DropListClass act_one_spec_edit(
+        113, act_one_spec_buf, sizeof(act_one_spec_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 120, 95, 40, up_btn, dn_btn);
+
+    // Setup value editor for action two.
+    char act_two_spec_buf[35] = { 0 };
+    DropListClass act_two_spec_edit(
+        114, act_two_spec_buf, sizeof(act_two_spec_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 142, 95, 40, up_btn, dn_btn);
+
+    // Populate the lists.
+    for (SpecialWeaponType i = SPECIAL_FIRST; i < SPECIAL_COUNT; ++i) {
+        act_one_spec_edit.Add_Item(SpecialWeaponName[i]);
+        act_two_spec_edit.Add_Item(SpecialWeaponName[i]);
+    }
+
+    if (m_ActionOne.m_IntegerValue >= SPECIAL_COUNT) {
+        act_one_spec_edit.Set_Selected_Index(0);
+    } else {
+        act_one_spec_edit.Set_Selected_Index(SpecialWeaponType(m_EventOne.m_IntegerValue));
+    }
+
+    if (m_ActionTwo.m_IntegerValue >= SPECIAL_COUNT) {
+        act_two_spec_edit.Set_Selected_Index(0);
+    } else {
+        act_two_spec_edit.Set_Selected_Index(SpecialWeaponType(m_EventTwo.m_IntegerValue));
+    }
+
+    // *** Editors for Quarries
+    // Setup value editor for action one.
+    char act_one_quarry_buf[35] = { 0 };
+    DropListClass act_one_quarry_edit(
+        113, act_one_quarry_buf, sizeof(act_one_quarry_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 120, 95, 40, up_btn, dn_btn);
+
+    // Setup value editor for action two.
+    char act_two_quarry_buf[35] = { 0 };
+    DropListClass act_two_quarry_edit(
+        114, act_two_quarry_buf, sizeof(act_two_quarry_buf), TPF_EDITOR | TPF_NOSHADOW, 225, 142, 95, 40, up_btn, dn_btn);
+
+    // Populate the lists.
+    for (QuarryType i = QUARRY_FIRST; i < QUARRY_COUNT; ++i) {
+        act_one_quarry_edit.Add_Item(QuarryName[i]);
+        act_two_quarry_edit.Add_Item(QuarryName[i]);
+    }
+
+    if (m_ActionOne.m_IntegerValue >= QUARRY_COUNT) {
+        act_one_quarry_edit.Set_Selected_Index(0);
+    } else {
+        act_one_quarry_edit.Set_Selected_Index(QuarryType(m_EventOne.m_IntegerValue));
+    }
+
+    if (m_ActionTwo.m_IntegerValue >= QUARRY_COUNT) {
+        act_two_quarry_edit.Set_Selected_Index(0);
+    } else {
+        act_two_quarry_edit.Set_Selected_Index(QuarryType(m_EventTwo.m_IntegerValue));
+    }
+
+    // *** Set trigger owner
+    // Edit box to enter trigger owner house
+    char owner_buf[5] = { 0 };
+    EditClass owner_edit(
+        104, owner_buf, sizeof(owner_buf), TPF_EDITOR | TPF_NOSHADOW, 40, 30, 40, 9, EDIT_TEXT | EDIT_NUMS | EDIT_SYMS);
+    strlcpy(owner_buf, m_Name, sizeof(owner_buf));
+
+    // Drop list to select owner house.
+    char owner_list_buf[35] = { 0 };
+    DropListClass owner_list_edit(143,
+        owner_list_buf,
+        sizeof(owner_list_buf),
+        TPF_EDITOR | TPF_NOSHADOW,
+        owner_edit.Get_Width() + owner_edit.Get_XPos() + 20,
+        owner_edit.Get_YPos(),
+        95,
+        40,
+        up_btn,
+        dn_btn);
+
+    // Populate the lists.
+    for (HousesType i = HOUSES_FIRST; i < HOUSES_COUNT; ++i) {
+        owner_list_edit.Add_Item(HouseTypeClass::As_Reference(i).Get_Name());
+    }
+
+    if (m_House == HOUSES_NONE) {
+        m_House = HOUSES_GOODGUY;
+    }
+
+    owner_list_edit.Set_Selected_Index(m_House);
+
+    // *** Set trigger persistance
+    // Drop list to select persistance.
+    char persist_list_buf[35] = { 0 };
+    DropListClass persist_list_edit(144,
+        persist_list_buf,
+        sizeof(persist_list_buf),
+        TPF_EDITOR | TPF_NOSHADOW,
+        owner_list_edit.Get_Width() + owner_list_edit.Get_XPos() + 20,
+        owner_list_edit.Get_YPos(),
+        105,
+        40,
+        up_btn,
+        dn_btn);
+
+    // Populate the lists.
+    for (PersistanceType i = STATE_FIRST; i < STATE_COUNT; ++i) {
+        persist_list_edit.Add_Item(_perstext[i]);
+    }
+
+    persist_list_edit.Set_Selected_Index(m_State);
+
+    // *** Setup buttons and intial gadget linkage state.
+    TextButtonClass button_event(148,
+        TXT_DEBUG_JUST_EVENT,
+        TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER,
+        event_one_list.Get_XPos(),
+        event_one_list.Get_YPos() + 11,
+        100,
+        9);
+    TextButtonClass button_action(147,
+        TXT_DEBUG_JUST_ACTION,
+        TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER,
+        act_one_list.Get_XPos(),
+        act_one_list.Get_YPos() + 11,
+        100,
+        9);
+    TextButtonClass button_ok(146, TXT_DEBUG_JUST_ACTION, TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER, 35, 190, 45, 9);
+    TextButtonClass button_cancel(145, TXT_DEBUG_JUST_ACTION, TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER, 340, 190, 45, 9);
+    button_cancel.Add_Tail(button_ok);
+    event_one_list.Add_Tail(button_ok);
+    act_one_list.Add_Tail(button_ok);
+    button_event.Add_Tail(button_ok);
+    button_action.Add_Tail(button_ok);
+    owner_edit.Add_Tail(button_ok);
+    persist_list_edit.Add_Tail(button_ok);
+    owner_list_edit.Add_Tail(button_ok);
+    bool process = true;
+    bool to_draw = true;
+
+    while (process) {
+        Call_Back();
+
+        if (to_draw && g_logicPage->Lock()) {
+            g_mouse->Hide_Mouse();
+            Dialog_Box(0, 0, 420, 220);
+            Draw_Caption(TXT_DEBUG_TRIGGER_EDITOR, 0, 0, 420);
+            Fancy_Text_Print("Trigger Event:",
+                event_one_list.Get_XPos(),
+                event_one_list.Get_YPos() - 7,
+                GadgetClass::Get_Color_Scheme(),
+                0,
+                TPF_NOSHADOW | TPF_EDITOR);
+            Fancy_Text_Print("Action to Perform:",
+                act_one_list.Get_XPos(),
+                act_one_list.Get_YPos() - 7,
+                GadgetClass::Get_Color_Scheme(),
+                0,
+                TPF_NOSHADOW | TPF_EDITOR);
+            Fancy_Text_Print("House:",
+                owner_list_edit.Get_XPos(),
+                owner_list_edit.Get_YPos() - 7,
+                GadgetClass::Get_Color_Scheme(),
+                0,
+                TPF_NOSHADOW | TPF_EDITOR);
+            Fancy_Text_Print("Name:",
+                owner_edit.Get_XPos(),
+                owner_edit.Get_YPos() - 7,
+                GadgetClass::Get_Color_Scheme(),
+                0,
+                TPF_NOSHADOW | TPF_EDITOR);
+            Fancy_Text_Print("Persistence:",
+                persist_list_edit.Get_XPos(),
+                persist_list_edit.Get_YPos() - 7,
+                GadgetClass::Get_Color_Scheme(),
+                0,
+                TPF_NOSHADOW | TPF_EDITOR);
+
+            // Draw linkage indicator for linked event state
+            if (m_EventLinkage == EVLINK_LINKED) {
+                g_logicPage->Draw_Line(event_one_list.Get_XPos() - 1,
+                    event_one_list.Get_YPos() + 3,
+                    event_one_list.Get_XPos() - 4,
+                    event_one_list.Get_YPos() + 3,
+                    COLOR_WHITE);
+                g_logicPage->Draw_Line(event_one_list.Get_XPos() - 4,
+                    event_one_list.Get_YPos() + 3,
+                    act_one_list.Get_XPos() - 4,
+                    act_one_list.Get_YPos() + 3,
+                    COLOR_WHITE);
+                g_logicPage->Draw_Line(act_one_list.Get_XPos() - 1,
+                    act_one_list.Get_YPos() + 3,
+                    act_one_list.Get_XPos() - 4,
+                    act_one_list.Get_YPos() + 3,
+                    COLOR_WHITE);
+                g_logicPage->Draw_Line(event_two_list.Get_XPos() - 1,
+                    event_two_list.Get_YPos() + 3,
+                    event_two_list.Get_XPos() - 10,
+                    event_two_list.Get_YPos() + 3,
+                    COLOR_WHITE);
+                g_logicPage->Draw_Line(event_two_list.Get_XPos() - 10,
+                    event_two_list.Get_YPos() + 3,
+                    act_two_list.Get_XPos() - 10,
+                    act_two_list.Get_YPos() + 3,
+                    COLOR_WHITE);
+                g_logicPage->Draw_Line(act_two_list.Get_XPos() - 1,
+                    act_two_list.Get_YPos() + 3,
+                    act_two_list.Get_XPos() - 10,
+                    act_two_list.Get_YPos() + 3,
+                    COLOR_WHITE);
+            }
+
+            // Setup the event linkage state.
+            event_two_list.Remove();
+
+            switch (m_EventLinkage) {
+                case EVLINK_SINGLE:
+                    button_event.Set_Text(TXT_DEBUG_JUST_EVENT, false);
+                    break;
+                case EVLINK_AND:
+                    button_event.Set_Text(TXT_DEBUG_TRIGGER_AND, false);
+                    event_two_list.Add(button_ok);
+                    break;
+                case EVLINK_OR:
+                    button_event.Set_Text(TXT_DEBUG_TRIGGER_OR, false);
+                    event_two_list.Add(button_ok);
+                    break;
+                case EVLINK_LINKED:
+                    button_event.Set_Text(TXT_DEBUG_TRIGGER_LINKED, false);
+                    event_two_list.Add(button_ok);
+                    break;
+                default:
+                    break;
+            }
+
+            // Setup Event 1 state
+            ev_one_house_edit.Remove();
+            ev_one_wp_edit.Remove();
+            ev_one_num_edit.Remove();
+            ev_one_build_edit.Remove();
+            ev_one_inf_edit.Remove();
+            ev_one_air_edit.Remove();
+            ev_one_unit_edit.Remove();
+            ev_one_team_edit.Remove();
+
+            // Add controls for the relevant need.
+            switch (TEventClass::Event_Needs(event_one_list.Current_Item()->Get_Event())) {
+                case NEED_INFANTRY:
+                    ev_one_inf_edit.Add(button_ok);
+                    break;
+                case NEED_UNIT:
+                    ev_one_unit_edit.Add(button_ok);
+                    break;
+                case NEED_AIRCRAFT:
+                    ev_one_air_edit.Add(button_ok);
+                    break;
+                case NEED_BUILDING:
+                    ev_one_build_edit.Add(button_ok);
+                    break;
+                case NEED_WAYPOINT:
+                    ev_one_wp_edit.Add(button_ok);
+                    break;
+                case NEED_NUMBER:
+                case NEED_14:
+                    ev_one_num_edit.Add(button_ok);
+                    break;
+                case NEED_TEAM:
+                    ev_one_team_edit.Add(button_ok);
+                    break;
+                case NEED_HOUSE:
+                    ev_one_house_edit.Add(button_ok);
+                    break;
+                default:
+                    break;
+            }
+
+            // Setup Event 2 state
+            ev_two_house_edit.Remove();
+            ev_two_wp_edit.Remove();
+            ev_two_num_edit.Remove();
+            ev_two_build_edit.Remove();
+            ev_two_inf_edit.Remove();
+            ev_two_air_edit.Remove();
+            ev_two_unit_edit.Remove();
+            ev_two_team_edit.Remove();
+
+            // Check if the event 2 list is currently active in the gadget linked list.
+            if (button_ok.Extract_Gadget(101) != nullptr) {
+                // Add controls for the relevant need.
+                switch (TEventClass::Event_Needs(event_two_list.Current_Item()->Get_Event())) {
+                    case NEED_INFANTRY:
+                        ev_two_inf_edit.Add(button_ok);
+                        break;
+                    case NEED_UNIT:
+                        ev_two_unit_edit.Add(button_ok);
+                        break;
+                    case NEED_AIRCRAFT:
+                        ev_two_air_edit.Add(button_ok);
+                        break;
+                    case NEED_BUILDING:
+                        ev_two_build_edit.Add(button_ok);
+                        break;
+                    case NEED_WAYPOINT:
+                        ev_two_wp_edit.Add(button_ok);
+                        break;
+                    case NEED_NUMBER:
+                    case NEED_14:
+                        ev_two_num_edit.Add(button_ok);
+                        break;
+                    case NEED_TEAM:
+                        ev_two_team_edit.Add(button_ok);
+                        break;
+                    case NEED_HOUSE:
+                        ev_two_house_edit.Add(button_ok);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            // Set up action linkage state.
+            button_action.Remove();
+            act_two_list.Remove();
+
+            if (m_EventLinkage == EVLINK_LINKED) {
+                act_two_list.Add(button_ok);
+            } else {
+            
+            }
+            ///............
+
+            g_mouse->Show_Mouse();
+            Flag_List_To_Redraw();
+            g_logicPage->Unlock();
+        }
+    }
+
+    switch (m_EventOne.Event_Needs()) {
+        default:
+            break;
+        case NEED_INFANTRY:
+            m_EventOne.m_IntegerValue = ev_two_inf_edit.Current_Index();
+            break;
+        case NEED_UNIT:
+            m_EventOne.m_IntegerValue = ev_one_unit_edit.Current_Index();
+            break;
+        case NEED_AIRCRAFT:
+            m_EventOne.m_IntegerValue = ev_one_air_edit.Current_Index();
+            break;
+        case NEED_BUILDING:
+            m_EventOne.m_IntegerValue = ev_one_build_edit.Current_Index();
+            break;
+        case NEED_WAYPOINT:
+            /////////////////
+            break;
+        case NEED_TEAM:
+            m_EventOne.m_IntegerValue = TeamTypeClass::From_Name(ev_one_team_edit.Current_Index());
+            break;
+        case NEED_NUMBER:
+        case NEED_14:
+            m_EventOne.m_IntegerValue = ev_one_num_edit.Current_Index();
+            break;
+        case NEED_HOUSE:
+            m_EventOne.m_IntegerValue = ev_one_build_edit.Current_Index();
+            break;
     }
 
     return false;

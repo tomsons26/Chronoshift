@@ -200,7 +200,7 @@ enum QuarryType
     QUARRY_COUNT
 };
 
-DEFINE_ENUMERATION_BITWISE_OPERATORS(QuarryType);
+DEFINE_ENUMERATION_OPERATORS(QuarryType);
 
 // threat type is in fact linked to Quarry, these all do not seems right...
 enum ThreatType

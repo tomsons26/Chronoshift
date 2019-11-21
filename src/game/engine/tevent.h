@@ -111,8 +111,7 @@ public:
     void Build_INI_Entry(char *entry_buffer) const;
     void Read_INI();
     AttachType Attaches_To();
-    NeedType Event_Needs();
-
+    NeedType Event_Needs() { return Event_Needs(m_Type); };
     void Code_Pointers() {}
     void Decode_Pointers() {}
 
@@ -120,6 +119,7 @@ public:
 
     static TEventType Event_From_Name(const char *name);
     static const char *Name_From_Event(TEventType tevent);
+    static NeedType Event_Needs(TEventType tevent);
 
 protected:
     TEventType m_Type;
@@ -143,6 +143,7 @@ public:
 
     void Draw_It(int index, int x, int y, int x_max, int y_max, BOOL selected, TextPrintType style) const;
     const char *Get_Name() const { return TEventClass::Name_From_Event(m_Event); }
+    TEventType Get_Event() const { return m_Event; }
 
     static int Comp(const void *a, const void *b);
 

@@ -547,9 +547,9 @@ const char *TEventClass::Name_From_Event(TEventType tevent)
     return s_EventText[tevent].m_Name;
 }
 
-NeedType TEventClass::Event_Needs()
+NeedType TEventClass::Event_Needs(TEventType tevent)
 {
-    switch (m_Type) {
+    switch (tevent) {
         case TEVENT_NO_EVENT:
         case TEVENT_SPIED_BY:
         case TEVENT_DISCOVERED_BY_PLAYER:
