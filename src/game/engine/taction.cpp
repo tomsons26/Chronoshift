@@ -520,9 +520,9 @@ const char *TActionClass::Name_From_Action(TActionType taction)
 /**
  * Determines what the action type needs to be provided with.
  */
-NeedType TActionClass::Action_Needs()
+NeedType TActionClass::Action_Needs(TActionType taction)
 {
-    switch (m_Type) {
+    switch (taction) {
         case TACTION_WINNER_IS:
         case TACTION_LOSER_IS:
         case TACTION_PROD_BEGIN:

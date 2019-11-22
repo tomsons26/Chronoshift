@@ -23,6 +23,8 @@
 #include "globals.h"
 #include "language.h"
 #include "movie.h"
+#include "quarry.h"
+#include "super.h"
 #include "tdroplist.h"
 #include "textbtn.h"
 #include "theme.h"
@@ -686,8 +688,8 @@ BOOL TriggerTypeClass::Edit()
 
     // Populate the lists.
     for (SpecialWeaponType i = SPECIAL_FIRST; i < SPECIAL_COUNT; ++i) {
-        act_one_spec_edit.Add_Item(SpecialWeaponName[i]);
-        act_two_spec_edit.Add_Item(SpecialWeaponName[i]);
+        act_one_spec_edit.Add_Item(SuperClass::Name_From(i));
+        act_two_spec_edit.Add_Item(SuperClass::Name_From(i));
     }
 
     if (m_ActionOne.m_IntegerValue >= SPECIAL_COUNT) {
@@ -715,8 +717,8 @@ BOOL TriggerTypeClass::Edit()
 
     // Populate the lists.
     for (QuarryType i = QUARRY_FIRST; i < QUARRY_COUNT; ++i) {
-        act_one_quarry_edit.Add_Item(QuarryName[i]);
-        act_two_quarry_edit.Add_Item(QuarryName[i]);
+        act_one_quarry_edit.Add_Item(Name_From_Quarry(i));
+        act_two_quarry_edit.Add_Item(Name_From_Quarry(i));
     }
 
     if (m_ActionOne.m_IntegerValue >= QUARRY_COUNT) {
@@ -998,13 +1000,177 @@ BOOL TriggerTypeClass::Edit()
             if (m_EventLinkage == EVLINK_LINKED) {
                 act_two_list.Add(button_ok);
             } else {
-            
-            }
-            ///............
+                button_action.Add(button_ok);
 
+                if (m_ActionLinkage == ACTLINK_AND) {
+                    button_action.Set_Text(TXT_DEBUG_TRIGGER_AND);
+                    act_two_list.Add(button_ok);
+                } else {
+                    button_action.Set_Text(TXT_DEBUG_JUST_ACTION);
+                }
+            }
+
+            // Setup action 1 state.
+            act_one_quarry_edit.Remove();
+            act_one_spec_edit.Remove();
+            act_one_house_edit.Remove();
+            act_one_bool_edit.Remove();
+            act_one_trig_edit.Remove();
+            act_one_wp_edit.Remove();
+            act_one_num_edit.Remove();
+            act_one_team_edit.Remove();
+            act_one_theme_edit.Remove();
+            act_one_voc_edit.Remove();
+            act_one_movie_edit.Remove();
+            act_one_vox_edit.Remove();
+
+            // Add controls for the relevant need.
+            switch (TActionClass::Action_Needs(act_one_list.Current_Item()->Get_Action())) {
+                case NEED_THEME:
+                    act_one_theme_edit.Add(button_ok);
+                    break;
+                case NEED_MOVIE:
+                    act_one_movie_edit.Add(button_ok);
+                    break;
+                case NEED_SOUND:
+                    act_one_voc_edit.Add(button_ok);
+                    break;
+                case NEED_SPEECH:
+                    act_one_vox_edit.Add(button_ok);
+                    break;
+                case NEED_WAYPOINT:
+                    act_one_wp_edit.Add(button_ok);
+                    break;
+                case NEED_NUMBER:
+                    act_one_num_edit.Add(button_ok);
+                    break;
+                case NEED_TRIGGER:
+                    act_one_trig_edit.Add(button_ok);
+                    break;
+                case NEED_TEAM:
+                    act_one_team_edit.Add(button_ok);
+                    break;
+                case NEED_HOUSE:
+                    act_one_house_edit.Add(button_ok);
+                    break;
+                case NEED_QUARRY:
+                    act_one_quarry_edit.Add(button_ok);
+                    break;
+                case NEED_BOOL:
+                    act_one_bool_edit.Add(button_ok);
+                    break;
+                case NEED_SPECIAL:
+                    act_one_spec_edit.Add(button_ok);
+                    break;
+                default:
+                    break;
+            }
+
+            // Setup action 2 state.
+            act_two_quarry_edit.Remove();
+            act_two_spec_edit.Remove();
+            act_two_house_edit.Remove();
+            act_two_bool_edit.Remove();
+            act_two_trig_edit.Remove();
+            act_two_wp_edit.Remove();
+            act_two_num_edit.Remove();
+            act_two_team_edit.Remove();
+            act_two_theme_edit.Remove();
+            act_two_voc_edit.Remove();
+            act_two_movie_edit.Remove();
+            act_two_vox_edit.Remove();
+
+            // Check if the action 2 list is currently active in the gadget linked list.
+            if (button_ok.Extract_Gadget(103) != nullptr) {
+                // Add controls for the relevant need.
+                switch (TActionClass::Action_Needs(act_two_list.Current_Item()->Get_Action())) {
+                    case NEED_THEME:
+                        act_two_theme_edit.Add(button_ok);
+                        break;
+                    case NEED_MOVIE:
+                        act_two_movie_edit.Add(button_ok);
+                        break;
+                    case NEED_SOUND:
+                        act_two_voc_edit.Add(button_ok);
+                        break;
+                    case NEED_SPEECH:
+                        act_two_vox_edit.Add(button_ok);
+                        break;
+                    case NEED_WAYPOINT:
+                        act_two_wp_edit.Add(button_ok);
+                        break;
+                    case NEED_NUMBER:
+                        act_two_num_edit.Add(button_ok);
+                        break;
+                    case NEED_TRIGGER:
+                        act_two_trig_edit.Add(button_ok);
+                        break;
+                    case NEED_TEAM:
+                        act_two_team_edit.Add(button_ok);
+                        break;
+                    case NEED_HOUSE:
+                        act_two_house_edit.Add(button_ok);
+                        break;
+                    case NEED_QUARRY:
+                        act_two_quarry_edit.Add(button_ok);
+                        break;
+                    case NEED_BOOL:
+                        act_two_bool_edit.Add(button_ok);
+                        break;
+                    case NEED_SPECIAL:
+                        act_two_spec_edit.Add(button_ok);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            // Collapse all the lists.
+            act_one_spec_edit.Collapse();
+            act_two_spec_edit.Collapse();
+            act_one_quarry_edit.Collapse();
+            act_two_quarry_edit.Collapse();
+            ev_one_house_edit.Collapse();
+            ev_two_house_edit.Collapse();
+            act_one_house_edit.Collapse();
+            act_two_house_edit.Collapse();
+            ev_one_team_edit.Collapse();
+            ev_two_team_edit.Collapse();
+            act_one_team_edit.Collapse();
+            act_two_team_edit.Collapse();
+            ev_one_build_edit.Collapse();
+            ev_two_build_edit.Collapse();
+            ev_one_unit_edit.Collapse();
+            ev_two_unit_edit.Collapse();
+            ev_one_inf_edit.Collapse();
+            ev_two_inf_edit.Collapse();
+            ev_one_air_edit.Collapse();
+            ev_two_air_edit.Collapse();
+            act_one_trig_edit.Collapse();
+            act_two_trig_edit.Collapse();
+            act_one_list.Collapse();
+            act_two_list.Collapse();
+            event_one_list.Collapse();
+            event_two_list.Collapse();
+            owner_list_edit.Collapse();
+            persist_list_edit.Collapse();
+            act_one_bool_edit.Collapse();
+            act_two_bool_edit.Collapse();
+            act_one_theme_edit.Collapse();
+            act_two_theme_edit.Collapse();
+            act_one_voc_edit.Collapse();
+            act_two_voc_edit.Collapse();
+            act_one_movie_edit.Collapse();
+            act_two_movie_edit.Collapse();
+            act_one_vox_edit.Collapse();
+            act_two_vox_edit.Collapse();
+            button_ok.Flag_List_To_Redraw();
             g_mouse->Show_Mouse();
-            Flag_List_To_Redraw();
+            to_draw = false;
             g_logicPage->Unlock();
+        }
+
+        switch (button_ok.Input()) {
         }
     }
 
@@ -1027,11 +1193,11 @@ BOOL TriggerTypeClass::Edit()
             /////////////////
             break;
         case NEED_TEAM:
-            m_EventOne.m_IntegerValue = TeamTypeClass::From_Name(ev_one_team_edit.Current_Index());
+            m_EventOne.m_IntegerValue = TeamTypeClass::From_Name(ev_one_team_edit.Current_Item())->Get_Heap_ID();
             break;
         case NEED_NUMBER:
         case NEED_14:
-            m_EventOne.m_IntegerValue = ev_one_num_edit.Current_Index();
+            m_EventOne.m_IntegerValue = atoi(ev_one_num_edit.Get_Text());
             break;
         case NEED_HOUSE:
             m_EventOne.m_IntegerValue = ev_one_build_edit.Current_Index();

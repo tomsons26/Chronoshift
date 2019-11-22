@@ -89,8 +89,8 @@ public:
     void Detach(target_t target);
     void Build_INI_Entry(char *entry_buffer) const;
     void Read_INI();
-    NeedType Action_Needs();
-
+    NeedType Action_Needs() { return Action_Needs(m_Type); }
+    
     void Code_Pointers() {}
     void Decode_Pointers() {}
 
@@ -98,6 +98,7 @@ public:
 
     static TActionType Action_From_Name(const char *name);
     static const char *Name_From_Action(TActionType taction);
+    static NeedType Action_Needs(TActionType taction);
 
 protected:
     TActionType m_Type;
@@ -115,7 +116,6 @@ private:
     static ActionTextStruct s_ActionText[TACTION_COUNT];
 };
 
-
 class ActionChoiceClass
 {
 public:
@@ -123,6 +123,7 @@ public:
 
     void Draw_It(int index, int x, int y, int x_max, int y_max, BOOL selected, TextPrintType style) const;
     const char *Get_Name() const { return TActionClass::Name_From_Action(m_Action); }
+    TActionType Get_Action() const { return m_Action; }
 
     static int Comp(const void *a, const void *b);
 
