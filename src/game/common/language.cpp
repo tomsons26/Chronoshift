@@ -419,6 +419,7 @@ const char *Text_String(int str_id)
         str_id -= TXT_EDITOR_MAGIC_NUM; // ground the value to be zero based.
         DEBUG_ASSERT(str_id < (TXT_EDITOR_FIRST + TXT_EDITOR_COUNT));
         DEBUG_ASSERT(EditorStrings != nullptr);
+        DEBUG_LOG("Fetching EDITOR string id %d\n", str_id);
         return Extract_String(EditorStrings, str_id);
     }
 
@@ -426,6 +427,7 @@ const char *Text_String(int str_id)
         str_id -= TXT_DEBUG_MAGIC_NUM; // ground the value to be zero based.
         DEBUG_ASSERT(str_id < (TXT_DEBUG_FIRST + TXT_DEBUG_COUNT));
         DEBUG_ASSERT(DebugStrings != nullptr);
+        DEBUG_LOG("Fetching DEBUG string id %d\n", str_id);
         return Extract_String(DebugStrings, str_id);
     }
 

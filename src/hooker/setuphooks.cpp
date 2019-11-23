@@ -109,11 +109,33 @@
 #include "vortex.h"
 #include "wsa.h"
 #include "xordelta.h"
+#include "triggertype.h"
 #include "sndctrl.h"
 #include <malloc.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+// replaces game controls dialog, for easy testing
+// map needs at least a single trigger or this won't do anything
+void Test_Triggers()
+{
+    char check[sizeof(TriggerTypeClass)];
+    MessageBoxClass msg;
+
+    if (g_TriggerTypes.Count()){
+        TriggerTypeClass &trig = g_TriggerTypes[0];
+
+        memcpy(check, &trig, sizeof(check));
+        bool changed = trig.Edit();
+        if (changed == false && memcmp(check, &trig, sizeof(check)) != 0){
+            msg.Process("CHANGES MADE!?!", "OH SHIT OH FUCK", nullptr);
+        }     
+    } else {
+        msg.Process("This Map Has no Triggers", "Not OK", nullptr);
+    }
+
+}
 
 void Setup_Hooks()
 {
@@ -964,6 +986,8 @@ void Setup_Hooks()
     // cargo.cpp
     Hook_Function(0x004623D0, *CargoClass::Attach);
     Hook_Function(0x00462448, *CargoClass::Detach_Object);
+
+    Hook_Call(0x004CABF6, *Test_Triggers);
 
 #endif
 }

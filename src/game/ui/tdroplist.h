@@ -99,7 +99,7 @@ TDropListClass<T> &TDropListClass<T>::operator=(TDropListClass<T> &that)
 template<typename T>
 TDropListClass<T>::TDropListClass(int id, char *text_buff, int text_size, TextPrintType style, int x, int y, int w, int h,
     void *up_btn_shape, void *down_btn_shape) :
-    EditClass(id, text_buff, text_size, style, x, y, w, 18, EDIT_TEXT | EDIT_NUMS | EDIT_SYMS),
+    EditClass(id, text_buff, text_size, style, x, y, w, 9, EDIT_NONE),
     m_IsExpanded(false),
     m_DropHeight(h),
     m_DropButton(0, down_btn_shape, w + x, y),
@@ -279,11 +279,10 @@ void TDropListClass<T>::Set_Position(int x, int y)
 template<typename T>
 int TDropListClass<T>::Add_Item(T item)
 {
-    T it = m_DropList.Get_Item(Current_Index());
-    strlcpy(m_Text, it->Get_Name(), m_MaxTextLength);
+    strlcpy(m_Text, item->Get_Name(), m_MaxTextLength);
     Flag_To_Redraw();
 
-    return m_DropList.Add_Item(it);
+    return m_DropList.Add_Item(item);
 }
 
 /**
@@ -375,7 +374,7 @@ void TDropListClass<T>::Expand()
 {
     if (!m_IsExpanded) {
         m_DropList.Set_XPos(m_XPos);
-        m_DropList.Set_YPos(m_YPos + 18);
+        m_DropList.Set_YPos(m_YPos + 9);
         m_DropList.Set_Width(m_Width);
         m_DropList.Set_Height(m_DropHeight);
         m_DropList.Add(Head_Of_List());

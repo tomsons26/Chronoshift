@@ -26,6 +26,7 @@
 #include "quarry.h"
 #include "super.h"
 #include "tdroplist.h"
+#include "msgbox.h"
 #include "textbtn.h"
 #include "theme.h"
 #include <cstdio>
@@ -147,8 +148,15 @@ AttachType TriggerTypeClass::Attaches_To()
     return ret;
 }
 
+extern char *&DebugStrings;
+
 BOOL TriggerTypeClass::Edit()
 {
+    //hack cause crashes fetching debug strings
+    if (DebugStrings == nullptr) {
+        DebugStrings = (char *)GameFileClass::Retrieve("debug.eng");
+    }
+    
     static const char *_perstext[] = { "Volatile", "Semi-persistent", "Persistent" };
     void *up_btn = GameMixFile::Retrieve("ebtn-up.shp");
     void *dn_btn = GameMixFile::Retrieve("ebtn-dn.shp");
@@ -156,19 +164,24 @@ BOOL TriggerTypeClass::Edit()
     // Setup the event choice lists.
     char ev_one_buff[35] = { 0 };
     char ev_two_buff[35] = { 0 };
+
+    MessageBoxClass msg;
+    msg.Simple_OK_Message_Box("Reached 0\n");
+
     TDropListClass<EventChoiceClass *> event_one_list(
-        100, ev_one_buff, sizeof(ev_one_buff), TPF_3PT | TPF_SHADOW, 45, 65, 160, 40, up_btn, dn_btn);
+        100, ev_one_buff, sizeof(ev_one_buff), TPF_EDITOR | TPF_NOSHADOW, 45, 65, 160, 40, up_btn, dn_btn);
     TDropListClass<EventChoiceClass *> event_two_list(
-        101, ev_two_buff, sizeof(ev_two_buff), TPF_3PT | TPF_SHADOW, 45, 87, 160, 40, up_btn, dn_btn);
+        101, ev_two_buff, sizeof(ev_two_buff), TPF_EDITOR | TPF_NOSHADOW, 45, 87, 160, 40, up_btn, dn_btn);
 
     for (int i = 0; i < TEVENT_COUNT; ++i) {
         event_one_list.Add_Item(&EventChoiceClass::s_EventChoices[i]);
         event_two_list.Add_Item(&EventChoiceClass::s_EventChoices[i]);
     }
 
+    //CRASHES
     // Sort case insensitive alphabetically based on event name.
-    qsort(event_one_list.Get_Entries(), sizeof(EventChoiceClass *), event_one_list.Count(), EventChoiceClass::Comp);
-    qsort(event_two_list.Get_Entries(), sizeof(EventChoiceClass *), event_two_list.Count(), EventChoiceClass::Comp);
+    //qsort(event_one_list.Get_Entries(), sizeof(EventChoiceClass *), event_one_list.Count(), EventChoiceClass::Comp);
+    //qsort(event_two_list.Get_Entries(), sizeof(EventChoiceClass *), event_two_list.Count(), EventChoiceClass::Comp);
     event_one_list.Set_Selected_Index(&EventChoiceClass::s_EventChoices[m_EventOne.m_Type]);
     event_two_list.Set_Selected_Index(&EventChoiceClass::s_EventChoices[m_EventTwo.m_Type]);
 
@@ -176,18 +189,19 @@ BOOL TriggerTypeClass::Edit()
     char act_one_buff[35] = { 0 };
     char act_two_buff[35] = { 0 };
     TDropListClass<ActionChoiceClass *> act_one_list(
-        100, act_one_buff, sizeof(act_one_buff), TPF_3PT | TPF_SHADOW, 45, 120, 160, 40, up_btn, dn_btn);
+        100, act_one_buff, sizeof(act_one_buff), TPF_EDITOR | TPF_NOSHADOW, 45, 120, 160, 40, up_btn, dn_btn);
     TDropListClass<ActionChoiceClass *> act_two_list(
-        101, act_two_buff, sizeof(act_two_buff), TPF_3PT | TPF_SHADOW, 45, 142, 160, 40, up_btn, dn_btn);
+        101, act_two_buff, sizeof(act_two_buff), TPF_EDITOR | TPF_NOSHADOW, 45, 142, 160, 40, up_btn, dn_btn);
 
-    for (int i = 0; i < TEVENT_COUNT; ++i) {
+    for (int i = 0; i < TACTION_COUNT; ++i) {
         act_one_list.Add_Item(&ActionChoiceClass::s_ActionChoices[i]);
         act_two_list.Add_Item(&ActionChoiceClass::s_ActionChoices[i]);
     }
 
+    //CRASHES
     // Sort case insensitive alphabetically based on action name.
-    qsort(act_one_list.Get_Entries(), sizeof(ActionChoiceClass *), act_one_list.Count(), ActionChoiceClass::Comp);
-    qsort(act_two_list.Get_Entries(), sizeof(ActionChoiceClass *), act_two_list.Count(), ActionChoiceClass::Comp);
+    //qsort(act_one_list.Get_Entries(), sizeof(ActionChoiceClass *), act_one_list.Count(), ActionChoiceClass::Comp);
+    //qsort(act_two_list.Get_Entries(), sizeof(ActionChoiceClass *), act_two_list.Count(), ActionChoiceClass::Comp);
     act_one_list.Set_Selected_Index(&ActionChoiceClass::s_ActionChoices[m_ActionOne.m_Type]);
     act_two_list.Set_Selected_Index(&ActionChoiceClass::s_ActionChoices[m_ActionTwo.m_Type]);
 
@@ -590,6 +604,8 @@ BOOL TriggerTypeClass::Edit()
         ev_two_air_edit.Set_Selected_Index(AircraftType(m_EventOne.m_IntegerValue));
     }
 
+    msg.Simple_OK_Message_Box("Reached 3\n");
+
     // *** Editors for Units
     // Setup value editor for event one.
     char ev_one_unit_buf[35] = { 0 };
@@ -733,21 +749,22 @@ BOOL TriggerTypeClass::Edit()
         act_two_quarry_edit.Set_Selected_Index(QuarryType(m_EventTwo.m_IntegerValue));
     }
 
-    // *** Set trigger owner
-    // Edit box to enter trigger owner house
-    char owner_buf[5] = { 0 };
-    EditClass owner_edit(
-        104, owner_buf, sizeof(owner_buf), TPF_EDITOR | TPF_NOSHADOW, 40, 30, 40, 9, EDIT_TEXT | EDIT_NUMS | EDIT_SYMS);
-    strlcpy(owner_buf, m_Name, sizeof(owner_buf));
+    
+    // Edit box to enter trigger name
+    char name_buf[24] = { 0 };
+    EditClass name_edit(
+        104, name_buf, sizeof(name_buf), TPF_EDITOR | TPF_NOSHADOW, 40, 30, 40, 9, EDIT_TEXT | EDIT_NUMS | EDIT_SYMS);
+    strlcpy(name_buf, m_Name, sizeof(name_buf));
 
+    // *** Set trigger owner
     // Drop list to select owner house.
     char owner_list_buf[35] = { 0 };
     DropListClass owner_list_edit(143,
         owner_list_buf,
         sizeof(owner_list_buf),
         TPF_EDITOR | TPF_NOSHADOW,
-        owner_edit.Get_Width() + owner_edit.Get_XPos() + 20,
-        owner_edit.Get_YPos(),
+        name_edit.Get_Width() + name_edit.Get_XPos() + 20,
+        name_edit.Get_YPos(),
         95,
         40,
         up_btn,
@@ -785,6 +802,8 @@ BOOL TriggerTypeClass::Edit()
 
     persist_list_edit.Set_Selected_Index(m_State);
 
+    msg.Simple_OK_Message_Box("Reached 3\n");
+
     // *** Setup buttons and intial gadget linkage state.
     TextButtonClass button_event(148,
         TXT_DEBUG_JUST_EVENT,
@@ -800,18 +819,27 @@ BOOL TriggerTypeClass::Edit()
         act_one_list.Get_YPos() + 11,
         100,
         9);
-    TextButtonClass button_ok(146, TXT_DEBUG_JUST_ACTION, TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER, 35, 190, 45, 9);
-    TextButtonClass button_cancel(145, TXT_DEBUG_JUST_ACTION, TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER, 340, 190, 45, 9);
-    button_cancel.Add_Tail(button_ok);
-    event_one_list.Add_Tail(button_ok);
-    act_one_list.Add_Tail(button_ok);
-    button_event.Add_Tail(button_ok);
-    button_action.Add_Tail(button_ok);
-    owner_edit.Add_Tail(button_ok);
-    persist_list_edit.Add_Tail(button_ok);
-    owner_list_edit.Add_Tail(button_ok);
+    TextButtonClass button_ok(145, TXT_OK, TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER, 35, 190, 45, 9);
+    TextButtonClass button_cancel(146, TXT_CANCEL, TPF_EDITOR | TPF_NOSHADOW | TPF_CENTER, 340, 190, 45, 9);
+
+    // link gadgets together
+    GadgetClass *activegdt = &button_ok;
+    button_cancel.Add_Tail(*activegdt);
+    event_one_list.Add_Tail(*activegdt);
+    act_one_list.Add_Tail(*activegdt);
+    button_event.Add_Tail(*activegdt);
+    button_action.Add_Tail(*activegdt);
+    name_edit.Add_Tail(*activegdt);
+    persist_list_edit.Add_Tail(*activegdt);
+    owner_list_edit.Add_Tail(*activegdt);
+
+    // Store current linkage values cause we don't want to edit them directly
+    int event_linkage = m_EventLinkage;
+    int action_linkage = m_ActionLinkage;
+
     bool process = true;
     bool to_draw = true;
+    bool cancelled = false;
 
     while (process) {
         Call_Back();
@@ -819,7 +847,9 @@ BOOL TriggerTypeClass::Edit()
         if (to_draw && g_logicPage->Lock()) {
             g_mouse->Hide_Mouse();
             Dialog_Box(0, 0, 420, 220);
+            g_InMapEditor = true;//hack
             Draw_Caption(TXT_DEBUG_TRIGGER_EDITOR, 0, 0, 420);
+            g_InMapEditor = false;//hack
             Fancy_Text_Print("Trigger Event:",
                 event_one_list.Get_XPos(),
                 event_one_list.Get_YPos() - 7,
@@ -839,8 +869,8 @@ BOOL TriggerTypeClass::Edit()
                 0,
                 TPF_NOSHADOW | TPF_EDITOR);
             Fancy_Text_Print("Name:",
-                owner_edit.Get_XPos(),
-                owner_edit.Get_YPos() - 7,
+                name_edit.Get_XPos(),
+                name_edit.Get_YPos() - 7,
                 GadgetClass::Get_Color_Scheme(),
                 0,
                 TPF_NOSHADOW | TPF_EDITOR);
@@ -852,7 +882,7 @@ BOOL TriggerTypeClass::Edit()
                 TPF_NOSHADOW | TPF_EDITOR);
 
             // Draw linkage indicator for linked event state
-            if (m_EventLinkage == EVLINK_LINKED) {
+            if (event_linkage == EVLINK_LINKED) {
                 g_logicPage->Draw_Line(event_one_list.Get_XPos() - 1,
                     event_one_list.Get_YPos() + 3,
                     event_one_list.Get_XPos() - 4,
@@ -888,21 +918,21 @@ BOOL TriggerTypeClass::Edit()
             // Setup the event linkage state.
             event_two_list.Remove();
 
-            switch (m_EventLinkage) {
+            switch (event_linkage) {
                 case EVLINK_SINGLE:
                     button_event.Set_Text(TXT_DEBUG_JUST_EVENT, false);
                     break;
                 case EVLINK_AND:
                     button_event.Set_Text(TXT_DEBUG_TRIGGER_AND, false);
-                    event_two_list.Add(button_ok);
+                    event_two_list.Add(*activegdt);
                     break;
                 case EVLINK_OR:
                     button_event.Set_Text(TXT_DEBUG_TRIGGER_OR, false);
-                    event_two_list.Add(button_ok);
+                    event_two_list.Add(*activegdt);
                     break;
                 case EVLINK_LINKED:
                     button_event.Set_Text(TXT_DEBUG_TRIGGER_LINKED, false);
-                    event_two_list.Add(button_ok);
+                    event_two_list.Add(*activegdt);
                     break;
                 default:
                     break;
@@ -921,29 +951,29 @@ BOOL TriggerTypeClass::Edit()
             // Add controls for the relevant need.
             switch (TEventClass::Event_Needs(event_one_list.Current_Item()->Get_Event())) {
                 case NEED_INFANTRY:
-                    ev_one_inf_edit.Add(button_ok);
+                    ev_one_inf_edit.Add(*activegdt);
                     break;
                 case NEED_UNIT:
-                    ev_one_unit_edit.Add(button_ok);
+                    ev_one_unit_edit.Add(*activegdt);
                     break;
                 case NEED_AIRCRAFT:
-                    ev_one_air_edit.Add(button_ok);
+                    ev_one_air_edit.Add(*activegdt);
                     break;
                 case NEED_BUILDING:
-                    ev_one_build_edit.Add(button_ok);
+                    ev_one_build_edit.Add(*activegdt);
                     break;
                 case NEED_WAYPOINT:
-                    ev_one_wp_edit.Add(button_ok);
+                    ev_one_wp_edit.Add(*activegdt);
                     break;
                 case NEED_NUMBER:
                 case NEED_14:
-                    ev_one_num_edit.Add(button_ok);
+                    ev_one_num_edit.Add(*activegdt);
                     break;
                 case NEED_TEAM:
-                    ev_one_team_edit.Add(button_ok);
+                    ev_one_team_edit.Add(*activegdt);
                     break;
                 case NEED_HOUSE:
-                    ev_one_house_edit.Add(button_ok);
+                    ev_one_house_edit.Add(*activegdt);
                     break;
                 default:
                     break;
@@ -960,33 +990,33 @@ BOOL TriggerTypeClass::Edit()
             ev_two_team_edit.Remove();
 
             // Check if the event 2 list is currently active in the gadget linked list.
-            if (button_ok.Extract_Gadget(101) != nullptr) {
+            if (activegdt->Extract_Gadget(101) != nullptr) {
                 // Add controls for the relevant need.
                 switch (TEventClass::Event_Needs(event_two_list.Current_Item()->Get_Event())) {
                     case NEED_INFANTRY:
-                        ev_two_inf_edit.Add(button_ok);
+                        ev_two_inf_edit.Add(*activegdt);
                         break;
                     case NEED_UNIT:
-                        ev_two_unit_edit.Add(button_ok);
+                        ev_two_unit_edit.Add(*activegdt);
                         break;
                     case NEED_AIRCRAFT:
-                        ev_two_air_edit.Add(button_ok);
+                        ev_two_air_edit.Add(*activegdt);
                         break;
                     case NEED_BUILDING:
-                        ev_two_build_edit.Add(button_ok);
+                        ev_two_build_edit.Add(*activegdt);
                         break;
                     case NEED_WAYPOINT:
-                        ev_two_wp_edit.Add(button_ok);
+                        ev_two_wp_edit.Add(*activegdt);
                         break;
                     case NEED_NUMBER:
                     case NEED_14:
-                        ev_two_num_edit.Add(button_ok);
+                        ev_two_num_edit.Add(*activegdt);
                         break;
                     case NEED_TEAM:
-                        ev_two_team_edit.Add(button_ok);
+                        ev_two_team_edit.Add(*activegdt);
                         break;
                     case NEED_HOUSE:
-                        ev_two_house_edit.Add(button_ok);
+                        ev_two_house_edit.Add(*activegdt);
                         break;
                     default:
                         break;
@@ -997,16 +1027,16 @@ BOOL TriggerTypeClass::Edit()
             button_action.Remove();
             act_two_list.Remove();
 
-            if (m_EventLinkage == EVLINK_LINKED) {
-                act_two_list.Add(button_ok);
+            if (event_linkage == EVLINK_LINKED) {
+                act_two_list.Add(*activegdt);
             } else {
-                button_action.Add(button_ok);
+                button_action.Add(*activegdt);
 
-                if (m_ActionLinkage == ACTLINK_AND) {
-                    button_action.Set_Text(TXT_DEBUG_TRIGGER_AND);
-                    act_two_list.Add(button_ok);
+                if (action_linkage == ACTLINK_AND) {
+                    button_action.Set_Text(TXT_DEBUG_TRIGGER_AND, false);
+                    act_two_list.Add(*activegdt);
                 } else {
-                    button_action.Set_Text(TXT_DEBUG_JUST_ACTION);
+                    button_action.Set_Text(TXT_DEBUG_JUST_ACTION, false);
                 }
             }
 
@@ -1027,40 +1057,40 @@ BOOL TriggerTypeClass::Edit()
             // Add controls for the relevant need.
             switch (TActionClass::Action_Needs(act_one_list.Current_Item()->Get_Action())) {
                 case NEED_THEME:
-                    act_one_theme_edit.Add(button_ok);
+                    act_one_theme_edit.Add(*activegdt);
                     break;
                 case NEED_MOVIE:
-                    act_one_movie_edit.Add(button_ok);
+                    act_one_movie_edit.Add(*activegdt);
                     break;
                 case NEED_SOUND:
-                    act_one_voc_edit.Add(button_ok);
+                    act_one_voc_edit.Add(*activegdt);
                     break;
                 case NEED_SPEECH:
-                    act_one_vox_edit.Add(button_ok);
+                    act_one_vox_edit.Add(*activegdt);
                     break;
                 case NEED_WAYPOINT:
-                    act_one_wp_edit.Add(button_ok);
+                    act_one_wp_edit.Add(*activegdt);
                     break;
                 case NEED_NUMBER:
-                    act_one_num_edit.Add(button_ok);
+                    act_one_num_edit.Add(*activegdt);
                     break;
                 case NEED_TRIGGER:
-                    act_one_trig_edit.Add(button_ok);
+                    act_one_trig_edit.Add(*activegdt);
                     break;
                 case NEED_TEAM:
-                    act_one_team_edit.Add(button_ok);
+                    act_one_team_edit.Add(*activegdt);
                     break;
                 case NEED_HOUSE:
-                    act_one_house_edit.Add(button_ok);
+                    act_one_house_edit.Add(*activegdt);
                     break;
                 case NEED_QUARRY:
-                    act_one_quarry_edit.Add(button_ok);
+                    act_one_quarry_edit.Add(*activegdt);
                     break;
                 case NEED_BOOL:
-                    act_one_bool_edit.Add(button_ok);
+                    act_one_bool_edit.Add(*activegdt);
                     break;
                 case NEED_SPECIAL:
-                    act_one_spec_edit.Add(button_ok);
+                    act_one_spec_edit.Add(*activegdt);
                     break;
                 default:
                     break;
@@ -1081,44 +1111,44 @@ BOOL TriggerTypeClass::Edit()
             act_two_vox_edit.Remove();
 
             // Check if the action 2 list is currently active in the gadget linked list.
-            if (button_ok.Extract_Gadget(103) != nullptr) {
+            if (activegdt->Extract_Gadget(103) != nullptr) {
                 // Add controls for the relevant need.
                 switch (TActionClass::Action_Needs(act_two_list.Current_Item()->Get_Action())) {
                     case NEED_THEME:
-                        act_two_theme_edit.Add(button_ok);
+                        act_two_theme_edit.Add(*activegdt);
                         break;
                     case NEED_MOVIE:
-                        act_two_movie_edit.Add(button_ok);
+                        act_two_movie_edit.Add(*activegdt);
                         break;
                     case NEED_SOUND:
-                        act_two_voc_edit.Add(button_ok);
+                        act_two_voc_edit.Add(*activegdt);
                         break;
                     case NEED_SPEECH:
-                        act_two_vox_edit.Add(button_ok);
+                        act_two_vox_edit.Add(*activegdt);
                         break;
                     case NEED_WAYPOINT:
-                        act_two_wp_edit.Add(button_ok);
+                        act_two_wp_edit.Add(*activegdt);
                         break;
                     case NEED_NUMBER:
-                        act_two_num_edit.Add(button_ok);
+                        act_two_num_edit.Add(*activegdt);
                         break;
                     case NEED_TRIGGER:
-                        act_two_trig_edit.Add(button_ok);
+                        act_two_trig_edit.Add(*activegdt);
                         break;
                     case NEED_TEAM:
-                        act_two_team_edit.Add(button_ok);
+                        act_two_team_edit.Add(*activegdt);
                         break;
                     case NEED_HOUSE:
-                        act_two_house_edit.Add(button_ok);
+                        act_two_house_edit.Add(*activegdt);
                         break;
                     case NEED_QUARRY:
-                        act_two_quarry_edit.Add(button_ok);
+                        act_two_quarry_edit.Add(*activegdt);
                         break;
                     case NEED_BOOL:
-                        act_two_bool_edit.Add(button_ok);
+                        act_two_bool_edit.Add(*activegdt);
                         break;
                     case NEED_SPECIAL:
-                        act_two_spec_edit.Add(button_ok);
+                        act_two_spec_edit.Add(*activegdt);
                         break;
                     default:
                         break;
@@ -1164,21 +1194,80 @@ BOOL TriggerTypeClass::Edit()
             act_two_movie_edit.Collapse();
             act_one_vox_edit.Collapse();
             act_two_vox_edit.Collapse();
-            button_ok.Flag_List_To_Redraw();
+            activegdt->Flag_List_To_Redraw();
             g_mouse->Show_Mouse();
             to_draw = false;
             g_logicPage->Unlock();
         }
 
-        switch (button_ok.Input()) {
+        KeyNumType input = activegdt->Input();
+        switch (input) {
+            case GADGET_INPUT_RENAME2(105):
+                Speak((VoxType)act_one_vox_edit.Current_Index());
+                to_draw = true;
+                break;
+            case GADGET_INPUT_RENAME2(106):
+                Speak((VoxType)act_two_vox_edit.Current_Index());
+                to_draw = true;
+                break;
+            case GADGET_INPUT_RENAME2(111):
+                Sound_Effect((VocType)act_one_voc_edit.Current_Index());
+                to_draw = true;
+                break;
+            case GADGET_INPUT_RENAME2(112):
+                Sound_Effect((VocType)act_two_voc_edit.Current_Index());
+                to_draw = true;
+                break;
+            case KN_RETURN:
+            case GADGET_INPUT_RENAME2(145):
+                // according to dos this case had all the save changes code, yea no we aren't doing that
+                process = false;
+                break;
+            case KN_ESC:
+            case GADGET_INPUT_RENAME2(146):
+                //rewritten to follow other ui's where a cancel bool is checked at the end
+                cancelled = true;
+                process = false;
+                return 0;
+            case GADGET_INPUT_RENAME2(147):
+                action_linkage = action_linkage == 0;
+                to_draw = true;
+                break;
+            case GADGET_INPUT_RENAME2(148):
+                event_linkage = (event_linkage + 1) % 4;
+                to_draw = true;
+                break;
+
+        }
+        // its a thing according to dos..
+        if (input & BTN_BIT){
+            to_draw = true;
         }
     }
 
+
+    if (cancelled) {
+        // cancelled, not making any changes, so return false
+        return false;
+    }
+
+    // save all values to the trigger type
+    m_House = (HousesType)owner_list_edit.Current_Index();
+    m_State = (PersistanceType)persist_list_edit.Current_Index();
+    if (strlen(name_buf) == 0){
+        strlcpy(m_Name, "____", sizeof(m_Name));
+        DEBUG_LOG("TriggerTypeClass::Edit Warning - Writing Trigger without a Name!\n");
+    } else {
+        strlcpy(m_Name, name_buf, sizeof(m_Name));
+    }
+
+    m_EventLinkage = (EventLinkType)event_linkage;
+    m_EventOne.m_Type = event_one_list.Current_Item()->Get_Event();
     switch (m_EventOne.Event_Needs()) {
         default:
             break;
         case NEED_INFANTRY:
-            m_EventOne.m_IntegerValue = ev_two_inf_edit.Current_Index();
+            m_EventOne.m_IntegerValue = ev_one_inf_edit.Current_Index();
             break;
         case NEED_UNIT:
             m_EventOne.m_IntegerValue = ev_one_unit_edit.Current_Index();
@@ -1190,10 +1279,10 @@ BOOL TriggerTypeClass::Edit()
             m_EventOne.m_IntegerValue = ev_one_build_edit.Current_Index();
             break;
         case NEED_WAYPOINT:
-            /////////////////
+            //TODO
             break;
         case NEED_TEAM:
-            m_EventOne.m_IntegerValue = TeamTypeClass::From_Name(ev_one_team_edit.Current_Item())->Get_Heap_ID();
+            m_EventOne.m_TeamType = TeamTypeClass::From_Name(ev_one_team_edit.Current_Item());
             break;
         case NEED_NUMBER:
         case NEED_14:
@@ -1204,7 +1293,124 @@ BOOL TriggerTypeClass::Edit()
             break;
     }
 
-    return false;
+    m_EventTwo.m_Type = event_two_list.Current_Item()->Get_Event();
+    switch (m_EventTwo.Event_Needs()) {
+        default:
+            break;
+        case NEED_INFANTRY:
+            m_EventTwo.m_IntegerValue = ev_two_inf_edit.Current_Index();
+            break;
+        case NEED_UNIT:
+            m_EventTwo.m_IntegerValue = ev_two_unit_edit.Current_Index();
+            break;
+        case NEED_AIRCRAFT:
+            m_EventTwo.m_IntegerValue = ev_two_air_edit.Current_Index();
+            break;
+        case NEED_BUILDING:
+            m_EventTwo.m_IntegerValue = ev_two_build_edit.Current_Index();
+            break;
+        case NEED_WAYPOINT:
+            //TODO
+            break;
+        case NEED_TEAM:
+            m_EventOne.m_TeamType = TeamTypeClass::From_Name(ev_two_team_edit.Current_Item());
+            break;
+        case NEED_NUMBER:
+        case NEED_14:
+            m_EventTwo.m_IntegerValue = atoi(ev_two_num_edit.Get_Text());
+            break;
+        case NEED_HOUSE:
+            m_EventTwo.m_IntegerValue = ev_two_build_edit.Current_Index();
+            break;
+    }
+
+    m_ActionLinkage = (ActionLinkType)action_linkage;
+
+    m_ActionOne.m_Type = act_one_list.Current_Item()->Get_Action();
+    switch (m_ActionOne.Action_Needs()) {
+        default:
+            break;
+        case NEED_THEME:
+            m_ActionOne.m_IntegerValue = act_one_theme_edit.Current_Index();
+            break;
+        case NEED_MOVIE:
+            m_ActionOne.m_IntegerValue = act_one_movie_edit.Current_Index();
+            break;
+        case NEED_SOUND:
+            m_ActionOne.m_IntegerValue = act_one_voc_edit.Current_Index();
+            break;
+        case NEED_SPEECH:
+            m_ActionOne.m_IntegerValue = act_one_vox_edit.Current_Index();
+            break;
+        case NEED_WAYPOINT:
+            //todo
+            break;
+        case NEED_NUMBER:
+            m_ActionOne.m_IntegerValue = atoi(act_one_num_edit.Get_Text());
+            break;
+        case NEED_TRIGGER:
+            m_ActionOne.m_TriggerType = TriggerTypeClass::From_Name(act_one_trig_edit.Current_Item());
+            break;
+        case NEED_TEAM:
+            m_ActionOne.m_TeamType = TeamTypeClass::From_Name(act_one_team_edit.Current_Item());
+            break;
+        case NEED_HOUSE:
+            m_ActionOne.m_IntegerValue = act_one_house_edit.Current_Index();
+            break;
+        case NEED_QUARRY:
+            m_ActionOne.m_IntegerValue = act_one_quarry_edit.Current_Index();
+            break;
+        case NEED_BOOL:
+            m_ActionOne.m_IntegerValue = act_one_bool_edit.Current_Index();
+            break;
+        case NEED_SPECIAL:
+            m_ActionOne.m_IntegerValue = act_one_spec_edit.Current_Index();
+            break;
+    }
+
+    m_ActionTwo.m_Type = act_two_list.Current_Item()->Get_Action();
+    switch (m_ActionTwo.Action_Needs()) {
+        default:
+            break;
+        case NEED_THEME:
+            m_ActionTwo.m_IntegerValue = act_two_theme_edit.Current_Index();
+            break;
+        case NEED_MOVIE:
+            m_ActionTwo.m_IntegerValue = act_two_movie_edit.Current_Index();
+            break;
+        case NEED_SOUND:
+            m_ActionTwo.m_IntegerValue = act_two_voc_edit.Current_Index();
+            break;
+        case NEED_SPEECH:
+            m_ActionTwo.m_IntegerValue = act_two_vox_edit.Current_Index();
+            break;
+        case NEED_WAYPOINT:
+            //todo
+            break;
+        case NEED_NUMBER:
+            m_ActionTwo.m_IntegerValue = atoi(act_two_num_edit.Get_Text());
+            break;
+        case NEED_TRIGGER:
+            m_ActionTwo.m_TriggerType = TriggerTypeClass::From_Name(act_two_trig_edit.Current_Item());
+            break;
+        case NEED_TEAM:
+            m_ActionTwo.m_TeamType = TeamTypeClass::From_Name(act_two_team_edit.Current_Item());
+            break;
+        case NEED_HOUSE:
+            m_ActionTwo.m_IntegerValue = act_two_house_edit.Current_Index();
+            break;
+        case NEED_QUARRY:
+            m_ActionTwo.m_IntegerValue = act_two_quarry_edit.Current_Index();
+            break;
+        case NEED_BOOL:
+            m_ActionTwo.m_IntegerValue = act_two_bool_edit.Current_Index();
+            break;
+        case NEED_SPECIAL:
+            m_ActionTwo.m_IntegerValue = act_two_spec_edit.Current_Index();
+            break;
+    }
+    //changes were made so return true
+    return true;
 }
 
 /**

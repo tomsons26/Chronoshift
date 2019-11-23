@@ -111,7 +111,7 @@ public:
     static TriggerTypeClass &As_Reference(TriggerType trigger);
     static TriggerTypeClass *As_Pointer(TriggerType trigger);
 
-private:
+public://private: hack
     void Fill_In(const char *name, char *options);
     void Build_INI_Entry(char *buffer);
     const char *Description();
