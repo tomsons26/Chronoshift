@@ -125,7 +125,8 @@ void ThemeClass::AI()
                 if (m_QueuedTheme != THEME_NONE) {
                     if (m_QueuedTheme == THEME_NEXT) {
                         m_QueuedTheme = Next_Song(m_CurrentTheme);
-                        captainslog_debug("ThemeClass::AI(Next song = %d : %s)", m_QueuedTheme, Base_Name(m_QueuedTheme));
+                        // spam
+                        //captainslog_debug("ThemeClass::AI(Next song = %d : %s)", m_QueuedTheme, Base_Name(m_QueuedTheme));
                     }
 
                     Play_Song(m_QueuedTheme);
