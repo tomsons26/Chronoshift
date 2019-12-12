@@ -114,6 +114,7 @@ inline BOOL Target_Is_Cell(target_t target)
 }
 
 BOOL Target_Is_Techno(target_t target);
+BOOL Target_Targetable(target_t target);
 
 BOOL Target_Legal(target_t target);
 

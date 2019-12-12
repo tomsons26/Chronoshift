@@ -49,6 +49,8 @@ public:
     void Code_Pointers();
     void Decode_Pointers();
 
+    BOOL Is_Leaving_Map() const;
+
     void Force_Active() { m_ForcedActive = true; }
     BOOL Should_Avoid_Threats() const { return m_Class->Avoid_Threats(); }
     int Field35() const { return m_field_35; }

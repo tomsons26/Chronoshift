@@ -212,6 +212,7 @@ public:
     void Disable_Zoom_Button() { s_ZoomButton.Disable(); }
     void Enable_Zoom_Button() { s_ZoomButton.Enable(); }
     void Flag_Strip_Redraw(ColumnType strip) { m_Columns[strip].Flag_To_Redraw(); }
+    void Flag_Sidebar_To_Redraw() { m_SidebarToRedraw = true; }
 
 protected:
     StripClass m_Columns[COLUMN_COUNT];

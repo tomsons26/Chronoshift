@@ -93,41 +93,32 @@ CellClass::CellClass() :
  */
 int CellClass::Cell_Color(BOOL none) const
 {
-    // TODO Needs BuildingClass
-#ifdef GAME_DLL
-    int (*func)(const CellClass *, BOOL) = reinterpret_cast<int (*)(const CellClass *, BOOL)>(0x0049EEF8);
-    return func(this, none);
-#elif 0
-    DEBUG_ASSERT(CellNumber < MAP_MAX_AREA);
-
-    static const int _ground_color[9] = { 141, 141, 172, 21, 21, 158, 141, 141, 174 };
-    static const int _snow_color[9] = { 141, 141, 172, 21, 21, 158, 141, 141, 174 };
+    static const int _ground_color[LAND_COUNT] = { 141, 141, 172, 21, 21, 158, 141, 141, 174 };
+    static const int _snow_color[LAND_COUNT] = { 141, 141, 172, 21, 21, 158, 141, 141, 174 };
 
     int color;
     BuildingClass *bptr = Cell_Building();
 
-    if (bptr == nullptr || bptr->Class_Of().IsInvisible) {
-        if (none) {
-            color = 0;
-        } else {
-            switch (g_LastTheater) {
-                case THEATER_SNOW:
-                    color = _snow_color[Land];
-                    break;
-
-                default: // All others use this one.
-                    color = _ground_color[Land];
-                    break;
-            }
-        }
-
-        return color;
+    if (bptr != nullptr || !bptr->Class_Of().Is_Invisible()) {
+        //uh wat
+        return g_ColorRemaps[bptr->Get_Owner_House()->Get_Color()].WindowPalette[7];
     }
 
-    return g_ColorRemaps[HouseClass::As_Reference(bptr->Owner()).Color].WindowPalette[7];
-#else
-    return 0;
-#endif
+    if (none) {
+        color = 0;
+    } else {
+        switch (g_LastTheater) {
+            case THEATER_SNOW:
+                color = _snow_color[m_Land];
+                break;
+
+            default: // All others use this one.
+                color = _ground_color[m_Land];
+                break;
+        }
+    }
+
+    return color;
 }
 
 /**
@@ -569,60 +560,50 @@ BOOL CellClass::Is_Clear_To_Build(SpeedType speed) const
  */
 void CellClass::Occupy_Down(ObjectClass *object)
 {
-    // TODO Requires RadarClass layer of IOMap hierachy.
-#ifdef GAME_DLL
-    void (*func)(const CellClass *, ObjectClass *) =
-        reinterpret_cast<void (*)(const CellClass *, ObjectClass *)>(0x0049F394);
-    func(this, object);
-#elif 0
-    DEBUG_ASSERT(CellNumber < MAP_MAX_AREA);
-    DEBUG_ASSERT(object->Is_Active());
-
     if (object != nullptr) {
         // If object is a building, and already have a cell occupier, find end of occupier chanin and stick object on the
         // end. Else stick object on the front.
-        if (object->What_Am_I() == RTTI_BUILDING && OccupierPtr != nullptr) {
-            SmartPtr<ObjectClass> *next_ptr;
+        if (object->What_Am_I() == RTTI_BUILDING && m_OccupierPtr != nullptr) {
+            ObjectClass *next_ptr;
 
-            for (ObjectClass *next = OccupierPtr; next != nullptr; next = next->Get_Next()) {
-                next_ptr = &next->Get_Next();
+            for (ObjectClass *next = m_OccupierPtr; next != nullptr; next = next->Get_Next()) {
+                next_ptr = next->Get_Next();
             }
 
-            *next_ptr = object;
-            object->Get_Next() = nullptr;
+            next_ptr = object;
+            object->Set_Next(nullptr);
         } else {
-            object->Get_Next() = OccupierPtr;
-            OccupierPtr = object;
+            object->Set_Next(m_OccupierPtr);
+            m_OccupierPtr = object;
         }
 
         // Dunno what this does yet.
-        g_Map.Radar_Pixel(CellNumber);
+        g_Map.Radar_Pixel(m_CellNumber);
 
-        if (Visible && g_Session.Game_To_Play() != GAME_CAMPAIGN) {
-            object->Revealed(PlayerPtr);
+        if (m_Visible && g_Session.Game_To_Play() != GAME_CAMPAIGN) {
+            object->Revealed(g_PlayerPtr);
         }
 
         // Set OccupantBit based on type of object.
         switch (object->What_Am_I()) {
             case RTTI_BUILDING:
-                OccupantBit |= OCCUPANT_BUILDING;
+                m_OccupantBit |= OCCUPANT_BUILDING;
                 break;
 
             case RTTI_AIRCRAFT: // Fall through
             case RTTI_UNIT: // Fall through
             case RTTI_VESSEL:
-                OccupantBit |= OCCUPANT_UNIT;
+                m_OccupantBit |= OCCUPANT_UNIT;
                 break;
 
             case RTTI_TERRAIN:
-                OccupantBit |= OCCUPANT_TERRAIN;
+                m_OccupantBit |= OCCUPANT_TERRAIN;
                 break;
 
             default:
                 break;
         }
     }
-#endif
 }
 
 /**
@@ -1310,7 +1291,8 @@ int CellClass::Ore_Adjust(BOOL randomize)
 }
 
 /**
- * 0x004B4D80
+ *
+ *
  */
 coord_t CellClass::Closest_Free_Spot(coord_t coord, BOOL skip_occupied) const
 {
@@ -1334,31 +1316,30 @@ coord_t CellClass::Closest_Free_Spot(coord_t coord, BOOL skip_occupied) const
     // clang-format on
 
     int spotindex = Spot_Index(coord);
+    coord_t top_left = Coord_Top_Left(coord);
 
     // If we have a unit or terrain object, return is 0;
-    if (!skip_occupied && ((m_OccupantBit & OCCUPANT_UNIT) != 0 || (m_OccupantBit & OCCUPANT_TERRAIN) != 0)) {
+    if (!skip_occupied && (m_OccupantBit & OCCUPANT_UNIT || m_OccupantBit & OCCUPANT_TERRAIN)) {
         return 0;
     }
 
     // If our intended spot is free or we are skipping occupied, return it.
     if (skip_occupied || Is_Spot_Free(spotindex)) {
-        return Coord_Add(coord, s_StoppingCoordAbs[spotindex]);
+        return Coord_Add(top_left, s_StoppingCoordAbs[spotindex]);
     }
 
     // If we already have an occupier on our intended spot, recalculate next best.
-    int coord_index = 0;
     char *spots = nullptr;
-
-    if (spotindex > 0) {
-        spots = _sequence[spotindex];
+    if (spotindex == 0) {
+        spots = _alternate[g_Scen.Get_Random_Value((m_OccupantBit & INFANTRY_SPOT_TOP_LEFT) == 0, 3)];
     } else {
-        spots = _alternate[g_Scen.Get_Random_Value((m_OccupantBit & 1) == 0, 3)];
+        spots = _sequence[spotindex];
     }
 
     // From our possible spots list, find a free one, if not, return 0.
     for (int i = 0; i < 4; ++i) {
         if (Is_Spot_Free(spots[i])) {
-            return Coord_Add(coord, s_StoppingCoordAbs[coord_index]);
+            return Coord_Add(top_left, s_StoppingCoordAbs[spots[i]]);
         }
     }
 
@@ -1370,11 +1351,11 @@ coord_t CellClass::Closest_Free_Spot(coord_t coord, BOOL skip_occupied) const
  */
 int CellClass::Spot_Index(coord_t coord)
 {
-    coord_t spot = coord & 0x00FF00FF;
+    coord_t spot = Coord_Sub_Cell(coord);
 
     // Looks like it checks the lepton distance and then does some math on the X and Y lepton dimensions to decide which spot
     // the passed packed coords are in.
-    if (Distance(spot, 0x00800080) >= 60) {
+    if (Distance(spot, (coord_t)0x00800080) >= 60) {
         int spot_index = 0;
 
         if (Coord_Lepton_X(spot) > 128) {

@@ -14,6 +14,7 @@
  *            LICENSE
  */
 #include "drive.h"
+#include "building.h"
 #include "gametypes.h"
 #include "globals.h"
 #include "iomap.h"
@@ -66,35 +67,101 @@ void DriveClass::Debug_Dump(MonoClass *mono) const
 
 void DriveClass::AI()
 {
-#ifdef GAME_DLL
-    void (*func)(DriveClass *) = reinterpret_cast<void (*)(DriveClass *)>(0x004B7CA8);
-    func(this);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function '%s' called!\n", __FUNCTION__);
-#endif
+    FootClass::AI();
+
+    UnitClass *uptr = (UnitClass *)this;
+
+    if (m_IsActive && m_Height <= 0) {
+        if (m_Teleported) {
+            // change based on Ghidra output
+            //if (m_RTTI != RTTI_UNIT || uptr->What_Type() != UNIT_CHRONO) {
+            if (m_RTTI == RTTI_UNIT && uptr->What_Type() != UNIT_CHRONO) {
+                if (m_field_145.Expired()){
+                    m_Teleported = false;
+                    Teleport_To(m_TeleportReturnLocation);
+                    m_TeleportReturnLocation = 0;
+                }
+            }
+        }
+        if (m_TrackNumber != -1) {
+            While_Moving();
+            //FIXME
+            if (m_IsActive && m_TrackNumber == -1 && (Target_Legal(m_NavCom) || m_Paths[0] != FACING_NONE) && (m_RTTI != RTTI_UNIT || !uptr->Is_Dumping())){
+                Start_Of_Move();
+                if (m_IsActive) {
+                    While_Moving();
+                }
+            }
+            
+        } else if (m_Facing.Has_Changed()){
+            Mark(MARK_3);
+            //FIXME
+            if (/*m_Facing.Rotation_Adjust()*/ 1) {
+                Mark(MARK_3);
+            }
+            if (!m_Rotating) {
+                Per_Cell_Process(PCP_0);
+            }
+
+        //FIXME
+        } else if ((m_Mission != MISSION_GUARD || Target_Legal(m_NavCom)) && m_Mission != MISSION_UNLOAD) {
+            if (Target_Legal(m_NavCom) || m_Paths[0] != FACING_NONE) {
+                //FIXME
+                if (m_LockedOnMap && m_Mission != MISSION_ENTER && Target_Legal(m_NavCom) && !Is_In_Same_Zone(As_Cell(m_NavCom))) {
+                    Stop_Driver();
+                    Assign_Destination(0);
+                } else {
+                    Start_Of_Move();
+                    if (m_IsActive) {
+                        While_Moving();
+                    }
+                }
+            } else {
+                Stop_Driver();
+            }
+        }
+    }
 }
 
+/**
+ *
+ *
+ */
 BOOL DriveClass::Limbo()
 {
-/*#ifdef GAME_DLL
-    BOOL (*func)(DriveClass *) = reinterpret_cast<BOOL (*)(DriveClass *)>(0x004B6488);
-    return func(this);
-#else*/
     if (!m_InLimbo) {
         Stop_Driver();
         m_TrackNumber = -1;
     }
     return FootClass::Limbo();
-//#endif
 }
 
-void DriveClass::Scatter(coord_t coord, int a2, int a3)
+void DriveClass::Scatter(coord_t coord, int a2, BOOL a3)
 {
 #ifdef GAME_DLL
-    void (*func)(DriveClass *, coord_t, int, int) = reinterpret_cast<void (*)(DriveClass *, coord_t, int, int)>(0x004B6304);
+    void (*func)(DriveClass *, coord_t, int, BOOL) = reinterpret_cast<void (*)(DriveClass *, coord_t, int, BOOL)>(0x004B6304);
     func(this, coord, a2, a3);
 #else
     DEBUG_ASSERT_PRINT(false, "Unimplemented function '%s' called!\n", __FUNCTION__);
+    if (!Get_Mission_Control().Is_Paralyzed() && (m_RTTI != RTTI_UNIT || !m_IsDumping)
+      && (!Target_Legal(m_NavCom) || a3 && !m_Rotating)
+      && (!Target_Legal(m_TarCom) || a2 || g_Scen.Get_Random_Value(1, 4) == 1)) {
+        if offset = 0;
+        if (coord != 0) {
+            int v5 = 0;//(Desired_Facing8(coord, HIWORD(coord), this->d.f.t.r.m.o.a.Coord, this->d.f.t.r.m.o.a.Coord >> 16) + 16) >> 5;
+            offset = (v5 +  g_Scen.Get_Random_Value(0, 2) - 1) & 7;
+        } else {
+            int v6 = 0;//(this->d.f.t.Facing.Current + 16) >> 5;
+            offset = (v6 +  g_Scen.Get_Random_Value(0, 2) - 1) & 7;
+        }
+        for (FacingType i = FACING_FIRST; i < FACING_COUNT; ++i) {
+            cell_t cell = 0; //AdjacentCell[(i + offset) & 7] + Get_Cell();
+            if (g_Map.In_Radar(cell) && Can_Enter_Cell(cell) == MOVE_OK) {
+                Assign_Destination(As_Target(cell));
+            }
+        }
+    }
+
 #endif
 }
 
@@ -158,14 +225,32 @@ void DriveClass::Response_Attack()
     }
 }
 
+/**
+ *
+ *
+ */
 void DriveClass::Assign_Destination(target_t dest)
 {
-#ifdef GAME_DLL
-    void (*func)(DriveClass *, target_t) = reinterpret_cast<void (*)(DriveClass *, target_t)>(0x004B67C8);
-    func(this, dest);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function '%s' called!\n", __FUNCTION__);
-#endif
+    if (m_NavCom != dest) {
+
+        BuildingClass *bptr = As_Building(dest);
+        if (bptr != nullptr && bptr->What_Type() == BUILDING_PROC) {
+            if (What_Am_I() == RTTI_UNIT && reinterpret_cast<UnitClass *>(this)->Class_Of().Is_Harvester()) {
+                if (m_Radio != bptr && m_Radio == nullptr && Transmit_Message(RADIO_HELLO, bptr) == RADIO_ROGER) {
+                    if (m_Mission != MISSION_ENTER && m_Mission != MISSION_HARVEST) {
+                        dest = 0;
+                        Assign_Mission(MISSION_ENTER);
+                    }
+                }
+            }
+        }
+
+        FootClass::Assign_Destination(dest);
+        m_Paths[0] = FACING_NONE;
+        if (!m_Moving && m_Mission != MISSION_UNLOAD) {
+            Start_Of_Move();
+        }
+    }
 }
 
 /**

@@ -15,6 +15,7 @@
  */
 #include "team.h"
 #include "gamedebug.h"
+#include "iomap.h"
 #include "foot.h"
 #include "target.h"
 
@@ -92,4 +93,19 @@ void TeamClass::Decode_Pointers()
     if (m_field_54 != nullptr) {
         m_field_54 = reinterpret_cast<FootClass *>(As_Techno((uintptr_t)m_field_54));
     }
+}
+
+BOOL TeamClass::Is_Leaving_Map() const
+{
+    if (!m_Moving) {
+        return false;
+    }
+    if ( m_Mission < 0 ){
+        return false;
+    }
+    //TODO
+    if (/*m_Missions[m_Mission].TMission == 3 &&*/ !g_Map.In_Radar(1)) {
+        return true;
+    }
+    return false;
 }

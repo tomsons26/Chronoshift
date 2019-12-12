@@ -14,14 +14,20 @@
  *            LICENSE
  */
 #include "anim.h"
+#include "building.h"
+#include "callback.h"
+#include "combat.h"
 #include "drawshape.h"
 #include "gameoptions.h"
 #include "house.h"
 #include "iomap.h"
 #include "lists.h"
+#include "logic.h"
+#include "palette.h"
 #include "rules.h"
+#include "session.h"
 #include "target.h"
-
+#include "techno.h"
 
 #ifndef GAME_DLL
 TFixedIHeapClass<AnimClass> g_Anims;
@@ -32,7 +38,7 @@ TFixedIHeapClass<AnimClass> g_Anims;
  *
  * @address 0x00424648
  */
-AnimClass::AnimClass(AnimType type, coord_t coord, unsigned char loop_delay, unsigned char loop_count /*, BOOL invisible*/) :
+AnimClass::AnimClass(AnimType type, coord_t coord, unsigned char loop_delay, unsigned char loop_count) :
     ObjectClass(RTTI_ANIM, g_Anims.ID(this)),
     m_LoopStage(),
     m_Class(g_AnimTypes.Ptr(type)),
@@ -41,9 +47,9 @@ AnimClass::AnimClass(AnimType type, coord_t coord, unsigned char loop_delay, uns
     m_Loops(loop_count),
     m_Bit1(false),
     m_Bit2(true),
-    m_Invisible(false /*invisible*/),
+    m_Invisible(false),
     m_LoopDelay(loop_delay),
-    m_field_4A()
+    m_field_4A(0)
 {
     if (m_Class->Get_End() == -1) {
         // seems like this if once had Theater specific art access
@@ -71,7 +77,7 @@ AnimClass::AnimClass(AnimType type, coord_t coord, unsigned char loop_delay, uns
     m_Loops = m_Class->Get_Loop_Count() * std::max<uint8_t>(loop_count, 1);
     m_Loops = std::max<uint8_t>(m_Loops, 1); // thats what it is...
     //
-    if (m_LoopDelay > 0) {
+    if (m_LoopDelay == 0) {
         Start();
     }
 }
@@ -94,6 +100,27 @@ AnimClass::AnimClass(const NoInitClass &noinit) :
     ObjectClass(noinit),
     m_LoopStage(noinit)
 {
+}
+
+AnimClass::~AnimClass()
+{
+    if (g_GameActive) {
+        ObjectClass *optr = As_Object(m_AttachedTo);
+        if (Target_Legal(m_AttachedTo) && optr != nullptr) {
+
+            g_Map.Remove(this, In_Which_Layer());
+
+            for (int i = 0; i < g_Anims.Count(); ++i) {
+                    //TODODODODDODODO
+            }
+
+            m_AttachedTo = 0;
+            m_Coord = Coord_Add(m_Coord, optr->Center_Coord());
+        }
+        Limbo();
+    }
+    m_AttachedTo = 0;
+    m_Class = nullptr;
 }
 
 /**
@@ -323,14 +350,23 @@ const int16_t *AnimClass::Anim_Overlap_List() const
 #endif
 }
 
+/**
+ *
+ *
+ */
 void AnimClass::Attach_To(ObjectClass *object)
 {
-#ifdef GAME_DLL
-    void (*func)(AnimClass *, ObjectClass *) = reinterpret_cast<void (*)(AnimClass *, ObjectClass *)>(0x0042554C);
-    func(this, object);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function called!\n");
-#endif
+    if (object != nullptr) {
+        object->Mark(MARK_5);
+        object->Set_AnimAttached(true);
+        object->Mark(MARK_4);
+
+        g_Map.Remove(this, In_Which_Layer());
+        m_AttachedTo = object->As_Target();
+        g_Map.Submit(this, In_Which_Layer());
+
+        m_Coord = Coord_Subtract(m_Coord, object->Target_Coord());
+    }
 }
 
 /**
@@ -344,14 +380,43 @@ coord_t AnimClass::Adjust_Coord(coord_t coord)
     return coord;
 }
 
-void AnimClass::Do_Atom_Damage(HousesType house, cell_t cell)
+/**
+ *
+ *
+ */
+void AnimClass::Do_Atom_Damage(HousesType house, cell_t cellnum)
 {
-#ifdef GAME_DLL
-    void (*func)(HousesType, cell_t) = reinterpret_cast<void (*)(HousesType, cell_t)>(0x00425AE0);
-    func(house, cell);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function called!\n");
-#endif
+    TechnoClass *techno = nullptr;
+
+    if (house != HOUSES_NONE) {
+        for (int i = 0; i < g_Logic.Count(); ++i) {
+            TechnoClass *tptr = (TechnoClass *)g_Logic[i];
+            if (tptr != nullptr && tptr->Is_Techno() && tptr->Owner() == house) {
+                if (tptr->What_Am_I() == RTTI_BUILDING) {
+                    if (reinterpret_cast<BuildingClass *>(tptr)->What_Type() == BUILDING_MSLO) {
+                        techno = tptr;
+                    }
+                }
+            }
+        }
+    }
+
+    int val = 4;
+    int atomdamage = g_Rule.Atom_Damage();
+    if (g_Session.Game_To_Play() != GAME_CAMPAIGN) {
+        val = 3;
+        atomdamage /= 5;
+    }
+
+    if (g_Session.Game_To_Play() == GAME_CAMPAIGN) {
+        g_WhitePalette.Set(30, Call_Back);
+    }
+
+    Wide_Area_Damage(Cell_To_Coord(cellnum), val * 256, atomdamage, techno, WARHEAD_FIRE);
+    Shake_The_Screen(3);
+    if (g_Session.Game_To_Play() == GAME_CAMPAIGN) {
+        g_GamePalette.Set(30, Call_Back);
+    }
 }
 
 /**

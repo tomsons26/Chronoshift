@@ -118,6 +118,11 @@ public:
 
     BOOL Is_Allowed_To_Leave_Map() const;
     BOOL Is_On_Priority_Mission();
+    BOOL Is_Recruitable(HouseClass *house) const;
+
+    void Handle_Navigation_List();
+    void Queue_Navigation_List(target_t target);
+    void Clear_Navigation_List();
 
     coord_t Head_To() const { return m_HeadTo; }
     FacingType Get_Path_Facing(int index) const { return m_Paths[index]; }

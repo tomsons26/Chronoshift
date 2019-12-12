@@ -944,42 +944,42 @@ void Setup_Hooks()
     //Hook_Function(0x004625E8, *CarryoverClass::Create);
 
     //anim.cpp
-    Hook_Function(0x004240C0, *AnimClass::Wrap_Center_Coord);
-    Hook_Function(0x00425610, *AnimClass::Wrap_In_Which_Layer);
-    Hook_Function(0x00425A98, *AnimClass::Detach);
-    Hook_Function(0x0042410C, *AnimClass::Render);
-    Hook_Function(0x004245E8, *AnimClass::Wrap_Occupy_List);
-    Hook_Function(0x0042415C, *AnimClass::Wrap_Draw_It);
-    Hook_Function(0x004242D0, *AnimClass::Mark);
-    Hook_Function(0x00423F64, *AnimClass::Wrap_Sort_Y);
-    Hook_Function(0x004256B8, *AnimClass::Start);
+    //Hook_Function(0x004240C0, *AnimClass::Wrap_Center_Coord);
+    //Hook_Function(0x00425610, *AnimClass::Wrap_In_Which_Layer);
+    //Hook_Function(0x00425A98, *AnimClass::Detach);
+    //Hook_Function(0x0042410C, *AnimClass::Render);
+    //Hook_Function(0x004245E8, *AnimClass::Wrap_Occupy_List);
+    //Hook_Function(0x0042415C, *AnimClass::Wrap_Draw_It);
+    //Hook_Function(0x004242D0, *AnimClass::Mark);
+    //Hook_Function(0x00423F64, *AnimClass::Wrap_Sort_Y);
+    //Hook_Function(0x004256B8, *AnimClass::Start);
 
     // aircraft.cpp
-    Hook_Function(0x00421918, *AircraftClass::Hook_Can_Enter_Cell);
-    Hook_Function(0x0041E0E8, *AircraftClass::AI);
-    Hook_Function(0x0041EA98, *AircraftClass::Hook_Sort_Y);
-    //Hook_Function(0x0041D25C, *AircraftClass::Hook_Draw_It);
-    Hook_Function(0x00423C38, *AircraftClass::Look);
-    Hook_Function(0x00421464, *AircraftClass::Hook_Desired_Load_Dir);
-    Hook_Function(0x00421D04, *AircraftClass::Hook_Pip_Count);
-    Hook_Function(0x00423154, *AircraftClass::Response_Select);
-    Hook_Function(0x004230FC, *AircraftClass::Response_Move);
-    Hook_Function(0x004230A4, *AircraftClass::Response_Attack);
-    Hook_Function(0x00423B60, *AircraftClass::Assign_Destination);
-    //Hook_Function(0x0042263C, *AircraftClass::Set_Speed);
-    Hook_Function(0x00423958, *AircraftClass::Movement_AI);
-    Hook_Function(0x0042381C, *AircraftClass::Edge_Of_World_AI);
-    Hook_Function(0x00420208, *AircraftClass::Hook_Active_Click_With);
-    Hook_Function(0x004202A8, *AircraftClass::Hook_Player_Assign_Mission);
-    Hook_Function(0x0041E9F4, *AircraftClass::Is_LZ_Clear);
-    Hook_Function_Const(0x0042063C, &AircraftClass::Pose_Dir);
+    //Hook_Function(0x00421918, *AircraftClass::Hook_Can_Enter_Cell);
+    //Hook_Function(0x0041E0E8, *AircraftClass::AI);
+    //Hook_Function(0x0041EA98, *AircraftClass::Hook_Sort_Y);
+    ////Hook_Function(0x0041D25C, *AircraftClass::Hook_Draw_It);
+    //Hook_Function(0x00423C38, *AircraftClass::Look);
+    //Hook_Function(0x00421464, *AircraftClass::Hook_Desired_Load_Dir);
+    //Hook_Function(0x00421D04, *AircraftClass::Hook_Pip_Count);
+    //Hook_Function(0x00423154, *AircraftClass::Response_Select);
+    //Hook_Function(0x004230FC, *AircraftClass::Response_Move);
+    //Hook_Function(0x004230A4, *AircraftClass::Response_Attack);
+    //Hook_Function(0x00423B60, *AircraftClass::Assign_Destination);
+    ////Hook_Function(0x0042263C, *AircraftClass::Set_Speed);
+    //Hook_Function(0x00423958, *AircraftClass::Movement_AI);
+    //Hook_Function(0x0042381C, *AircraftClass::Edge_Of_World_AI);
+    //Hook_Function(0x00420208, *AircraftClass::Hook_Active_Click_With);
+    //Hook_Function(0x004202A8, *AircraftClass::Hook_Player_Assign_Mission);
+    //Hook_Function(0x0041E9F4, *AircraftClass::Is_LZ_Clear);
+    //Hook_Function_Const(0x0042063C, &AircraftClass::Pose_Dir);
     
     // object.cpp
-    Hook_Function(0x0051DDE8, *ObjectClass::Limbo);
-    Hook_Function(0x0051DF74, *ObjectClass::Detach);
-    Hook_Function(0x0051DFDC, *ObjectClass::Detach_All);
-    Hook_Function(0x0051E5C0, *ObjectClass::Paradrop);
-    Hook_Function(0x0051E690, *ObjectClass::Attach_Trigger);
+    //Hook_Function(0x0051DDE8, *ObjectClass::Limbo);
+    //Hook_Function(0x0051DF74, *ObjectClass::Detach);
+    //Hook_Function(0x0051DFDC, *ObjectClass::Detach_All);
+    //Hook_Function(0x0051E5C0, *ObjectClass::Paradrop);
+    //Hook_Function(0x0051E690, *ObjectClass::Attach_Trigger);
 
     // cargo.cpp
     Hook_Function(0x004623D0, *CargoClass::Attach);
@@ -1037,6 +1037,32 @@ void Setup_Hooks()
     Hook_Function(0x0054FCF0, *SmudgeClass::Mark);
     Hook_Function(0x0054FFAC, *SmudgeClass::Disown);
     Hook_Function(0x005500B0, *SmudgeClass::Read_INI);
+
+    // infantry.cpp
+    //Hook_Function(0x004ED57C, *InfantryClass::AI);
+    /////Hook_Function(0x004F24B0, *InfantryClass::Get_Image_Data);
+    //Hook_Function(0x004F0634, *InfantryClass::Hook_What_Action_Cell);//seems to work
+    Hook_Function(0x004F2564, *InfantryClass::Paradrop);//seems to work
+    //Hook_Function(0x004EC3AC, *InfantryClass::Hook_Draw_It);//seems to work
+    /////Hook_Function(0x004F03D4, *InfantryClass::Hook_Active_Click_With_Obj);
+    /////Hook_Function(0x004F049C, *InfantryClass::Hook_Full_Name);
+    Hook_Function(0x004EEDB8, *InfantryClass::Limbo);//seems to work
+    Hook_Function(0x004EEEAC, *InfantryClass::Unlimbo);//seems to work
+    Hook_Function(0x004ED1FC, *InfantryClass::Detach);
+    Hook_Function(0x004F0548, *InfantryClass::Mission_Attack);
+    /////Hook_Function(0x004EDF98, *InfantryClass::Hook_Can_Fire);
+    /////Hook_Function(0x004ED478, *InfantryClass::Assign_Target);
+    /////Hook_Function(0x004EEE00, *InfantryClass::Fire_At);
+    /////Hook_Function(0x004F2504, *InfantryClass::Hook_Is_Ready_To_Random_Animate);
+    /////Hook_Function(0x004EE22C, *InfantryClass::Hook_Random_Animate);
+    /////Hook_Function(0x004EE03C, *InfantryClass::Enter_Idle_Mode);
+    /////Hook_Function(0x004EEC3C, *InfantryClass::Start_Driver);
+    /////Hook_Function(0x004EEB64, *InfantryClass::Stop_Driver);
+    /////Hook_Function_Const(0x004EC224, &InfantryClass::Shape_Number);
+    ///////Hook_Function(0x004F0418, *InfantryClass::Set_Occupy_Spot);
+    ///////Hook_Function(0x004F045C, *InfantryClass::Clear_Occupy_Spot);
+    /////Hook_Function(0x004F0DB4, *InfantryClass::Edge_Of_World_AI);
+    /////Hook_Function(0x004F0C48, *InfantryClass::Fear_AI);
 #endif
 }
 
