@@ -105,16 +105,6 @@ BOOL RadioClass::Limbo()
 
 RadioMessageType RadioClass::Receive_Message(RadioClass *radio, RadioMessageType message, target_t &target)
 {
-    DEBUG_ASSERT(radio != nullptr);
-    DEBUG_ASSERT(message != RADIO_NONE);
-    DEBUG_ASSERT(message < RADIO_COUNT);
-
-#ifdef GAME_DLL
-    RadioMessageType (*func)(RadioClass *, RadioMessageType, target_t &) =
-        reinterpret_cast<RadioMessageType (*)(RadioClass *, RadioMessageType, target_t &)>(0x00532A70);
-    return func(radio, message, target);
-#elif 0 // TODO Needs HouseClass.
-
     // Basic circular tracker of received message history.
     if (message != m_MessageHistory[0]) {
         m_MessageHistory[2] = m_MessageHistory[1];
@@ -122,34 +112,29 @@ RadioMessageType RadioClass::Receive_Message(RadioClass *radio, RadioMessageType
         m_MessageHistory[0] = message;
     }
 
-    if (m_Radio != radio || message != RADIO_OVER_AND_OUT) {
-        if (message == RADIO_HELLO && m_Health > 0) {
-            if ((m_Radio == nullptr || m_Radio == radio) && radio != nullptr) {
-                TechnoClass *t_radioptr = reinterpret_cast<TechnoClass *>(radio);
-                TechnoClass *t_this = reinterpret_cast<TechnoClass *>(this);
-
-                if (t_radioptr != nullptr && t_this != nullptr) {
-                    if (t_radioptr->OwnerHouse->Is_Ally(this) && t_this->OwnerHouse->Is_Ally(t_radioptr)) {
-                        m_Radio = radio;
-                        return RADIO_ROGER;
-                    }
-                }
-            }
-
-            return RADIO_UNABLE_TO_COMPLY;
-        }
-
-        return ObjectClass::Receive_Message(radio, RADIO_OVER_AND_OUT, target);
+    if (m_Radio == radio && message == RADIO_OVER_AND_OUT) {
+        ObjectClass::Receive_Message(radio, RADIO_OVER_AND_OUT, target);
+        m_Radio = nullptr;
+        return RADIO_ROGER;
     }
 
-    ObjectClass::Receive_Message(radio, RADIO_OVER_AND_OUT, target);
+    if (message != RADIO_HELLO || m_Health == 0) {
+        return ObjectClass::Receive_Message(radio, message, target);
+    }
+    /*
+    if (m_Radio == radio || m_Radio == nullptr) {
+        m_Radio = radio;
+        return RADIO_ROGER;
+    }
 
-    m_Radio = nullptr;
+    return RADIO_UNABLE_TO_COMPLY;
+    */
 
+    //dos version of above
+    if (m_Radio != radio && m_Radio != nullptr) {
+        return RADIO_UNABLE_TO_COMPLY;
+    }
     return RADIO_ROGER;
-#else
-    return RADIO_ROGER;
-#endif
 }
 
 RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, target_t &target, RadioClass *radio)

@@ -89,7 +89,11 @@ public:
 
     UnitType What_Type() const { return m_Type; }
 
+    BOOL Is_Harvester() const { return m_Harvester; }
+    BOOL Is_Bit16() const { return m_Bit16; }
     BOOL Is_Bit32() const { return m_Bit32; }
+    BOOL Is_Mobile_Gap_Gen() const { return m_IsMobileGapGen; }
+    BOOL Cant_Fire_Moving() const { return m_NoMovingFire; }
 
     static void One_Time();
     static void Init_Heap();

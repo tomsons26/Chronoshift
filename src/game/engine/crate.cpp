@@ -15,6 +15,7 @@
  */
 #include "crate.h"
 #include "cell.h"
+#include "rules.h"
 #include "iomap.h"
 #include "gamedebug.h"
 #include "scenario.h"
@@ -45,6 +46,10 @@ const char *CrateClass::s_CrateNames[] = { "Money",
     "ChronalVortex",
     nullptr };
 
+/**
+ *
+ *
+ */
 BOOL CrateClass::Remove_It()
 {
     if (m_Cell == -1) {
@@ -57,23 +62,22 @@ BOOL CrateClass::Remove_It()
     return true;
 }
 
+/**
+ *
+ *
+ */
 BOOL CrateClass::Create_Crate(cell_t cell)
 {
-    // TODO Requires ScenarioClass and RuleClass to actuall implement the functions.
-#ifdef GAME_DLL
-    BOOL (*func)(const CrateClass *, cell_t) = reinterpret_cast<BOOL (*)(const CrateClass *, cell_t)>(0x004AC91C);
-    return func(this, cell);
-#elif 0
     Remove_It();
-
-    if (Put_Crate(cell)) {
+    if (!Put_Crate(cell)) {
+        return false;
     }
 
-    return false;
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function called!\n");
-    return false;
-#endif
+    m_Cell = cell;
+    m_CrateTimer = g_Scen.Get_Random_Value(450 * g_Rule.Crate_Regen(), 1800 * g_Rule.Crate_Regen());
+    m_CrateTimer.Start();
+
+    return true;
 }
 
 BOOL CrateClass::Put_Crate(cell_t &cell)
@@ -88,6 +92,10 @@ BOOL CrateClass::Put_Crate(cell_t &cell)
 #endif
 }
 
+/**
+ *
+ *
+ */
 BOOL CrateClass::Get_Crate(cell_t cell)
 {
     if (g_Map.In_Radar(cell)) {

@@ -1645,12 +1645,12 @@ void HouseClass::Attacked()
 
 const TeamTypeClass *HouseClass::Suggested_New_Team(int a1)
 {
-#ifdef GAME_DLL
-    const TeamTypeClass *(*func)(HouseClass *, int) = reinterpret_cast<const TeamTypeClass *(*)(HouseClass *, int)>(0x004D6560);
-    return func(this, a1);
-#else
-    return nullptr;
-#endif
+    #ifdef GAME_DLL
+        const TeamTypeClass *(*func)(HouseClass *, int) = reinterpret_cast<const TeamTypeClass *(*)(HouseClass *, int)>(0x004D6560);
+        return func(this, a1);
+    #else
+        return TeamTypeClass::Suggested_New_Team(this, m_AScan.m_HaveBuilt, m_UScan.m_HaveBuilt, m_IScan.m_HaveBuilt, m_VScan.m_HaveBuilt, a1);
+    #endif
 }
 
 ProdFailType HouseClass::Begin_Production(RTTIType rtti, int a2)
@@ -1664,14 +1664,22 @@ ProdFailType HouseClass::Begin_Production(RTTIType rtti, int a2)
 #endif
 }
 
+/**
+ *
+ *
+ */
 ProdFailType HouseClass::Suspend_Production(RTTIType rtti)
 {
-#ifdef GAME_DLL
-    ProdFailType (*func)(HouseClass *, RTTIType) = reinterpret_cast<ProdFailType (*)(HouseClass *, RTTIType)>(0x004D66D0);
-    return func(this, rtti);
-#else
-    return ProdFailType();
-#endif
+    FactoryClass *fptr = Fetch_Factory(rtti);
+    if (fptr == nullptr) {
+        return PROD_REJECTED;
+    }
+    fptr->Suspend();
+    if (this == g_PlayerPtr){
+        g_Map.Flag_Sidebar_To_Redraw();
+        g_Map.Flag_To_Redraw();
+    }
+    return PROD_APPROVED;
 }
 
 ProdFailType HouseClass::Abandon_Production(RTTIType rtti)
@@ -1777,7 +1785,7 @@ target_t HouseClass::Find_Juicy_Target(coord_t coord) const
         // and thus ripe for the taking.
         if (uptr != nullptr && !uptr->In_Limbo() && !Is_Ally(uptr)) {
             if (uptr->Get_Owner_House()->Which_Zone(uptr) == ZONE_NONE) {
-                int dist = Distance(uptr->Center_Coord(), coord);
+                int dist = Distance(coord, uptr->Center_Coord());
 
                 // Give anti air units a wide berth.
                 if (uptr->Anti_Air()) {
@@ -2313,12 +2321,7 @@ UrgencyType HouseClass::Check_Raise_Power()
 
 UrgencyType HouseClass::Check_Lower_Power()
 {
-#ifdef GAME_DLL
-    UrgencyType (*func)(HouseClass *) = reinterpret_cast<UrgencyType (*)(HouseClass *)>(0x004D9D2C);
-    return func(this);
-#else
-    return UrgencyType();
-#endif
+    return (UrgencyType)(m_Drain + 300 < m_Power);
 }
 
 UrgencyType HouseClass::Check_Raise_Money()

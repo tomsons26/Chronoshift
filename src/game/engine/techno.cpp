@@ -14,8 +14,10 @@
  *            LICENSE
  */
 #include "techno.h"
+#include "building.h"
 #include "bullettype.h"
 #include "coord.h"
+#include "difficulty.h"
 #include "display.h"
 #include "drawshape.h"
 #include "foot.h"
@@ -181,12 +183,22 @@ BOOL TechnoClass::Is_Player_Army() const
 
 ActionType TechnoClass::What_Action(ObjectClass *object) const
 {
+#ifdef GAME_DLL
+    DEFINE_CALL(func, 0x0056590C, ActionType, const TechnoClass *, ObjectClass *);
+    return func(this, object);
+#else
     return ActionType();
+#endif
 }
 
 ActionType TechnoClass::What_Action(cell_t cellnum) const
 {
+#ifdef GAME_DLL
+    DEFINE_CALL(func, 0x00565D84, ActionType, const TechnoClass *, cell_t);
+    return func(this, cellnum);
+#else
     return ActionType();
+#endif
 }
 
 /**
@@ -514,9 +526,19 @@ BOOL TechnoClass::Select()
     return false;
 }
 
+/**
+ *
+ *
+ */
 BOOL TechnoClass::In_Range(coord_t coord, WeaponSlotType weapon) const
 {
-    return 0;
+    if (!m_LockedOnMap) {
+        return false;
+    }
+    if (Distance(Fire_Coord(weapon), coord) <= Weapon_Range(weapon)) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -546,14 +568,22 @@ DamageResultType TechnoClass::Take_Damage(int &damage, int a2, WarheadType warhe
 #endif
 }
 
+/**
+ *
+ *
+ */
 int TechnoClass::Value() const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0056756C, int, const TechnoClass *);
-    return func(this);
-#else
-    return 0;
-#endif
+    int value = 0;
+
+    if (g_Rule.Difficulty_Control(m_OwnerHouse->Get_AI_Difficulty()).ContentScan || g_Rule.IQ_Controls().m_ContentScan <= m_OwnerHouse->Get_Current_IQ()) {
+        if (m_Cargo.Has_Cargo()) {
+            for (ObjectClass *i = (ObjectClass *)m_Cargo.Attached_Object(); i != nullptr; i = i->Get_Next()) {
+                value += i->Value();
+            }
+        }
+    }
+    return value + Risk() + Techno_Class_Of().Get_ThreatPoints();
 }
 
 /**
@@ -791,12 +821,37 @@ int TechnoClass::Rearm_Delay(BOOL a1, WeaponSlotType weapon) const
 
 int TechnoClass::Refund_Amount() const
 {
-    return 0;
+    int cost = m_OwnerHouse->Get_Cost_Multiplier() * Techno_Class_Of().Raw_Cost();
+    if (m_OwnerHouse->Is_Human()) {
+        cost = g_Rule.Refund_Percent() * cost;
+    }
+    return cost;
 }
 
+/**
+ *
+ *
+ */
 int TechnoClass::Threat_Range(int a1) const
 {
-    return 0;
+    int range;
+
+    if (a1 == -1) {
+        return -1;
+    }
+    if (a1 == 0) {
+        range = Techno_Class_Of().Get_Guard_Range();
+        if (range != 0) {
+            return range;
+        }
+        return 0;
+    }
+
+    range = Techno_Class_Of().Get_Guard_Range();
+    if (range == 0) {
+        range = std::max(Weapon_Range(WEAPON_SLOT_PRIMARY), Weapon_Range(WEAPON_SLOT_SECONDARY));
+    }
+    return std::clamp(2 * range, 0, 2560);
 }
 
 /**
@@ -897,14 +952,58 @@ void TechnoClass::Stun()
     Unselect();
 }
 
+/**
+ *
+ *
+ */
 BOOL TechnoClass::In_Range(target_t target, WeaponSlotType weapon) const
 {
-    return 0;
+    if (!m_LockedOnMap) {
+        return false;
+    }
+
+    if (!Target_Legal(target)) {
+        return false;
+    }
+
+    int range = Weapon_Range(weapon);
+    BuildingClass *bptr = As_Building(target);
+    if (bptr != nullptr) {
+        // << 6? wat
+        range += (bptr->Class_Of().Width() + bptr->Class_Of().Height(false)) << 6;
+    }
+
+    if (Distance(Fire_Coord(), As_Coord(target)) <= range) {
+        return true;
+    }
+    return false;
 }
 
+/**
+ *
+ *
+ */
 BOOL TechnoClass::In_Range(ObjectClass *object, WeaponSlotType weapon) const
 {
-    return 0;
+    if (!m_LockedOnMap) {
+        return false;
+    }
+
+    if (object == nullptr) {
+        return false;
+    }
+
+    int range = Weapon_Range(weapon);
+    if (object->What_Am_I() == RTTI_BUILDING) {
+        BuildingClass *bptr = reinterpret_cast<BuildingClass *>(object);
+        // << 6? wat
+        range += (bptr->Class_Of().Width() + bptr->Class_Of().Height(false)) << 6;
+    }
+
+    if (Distance(Fire_Coord(), object->Center_Coord()) <= range) {
+        return true;
+    }
+    return false;
 }
 
 FireErrorType TechnoClass::Can_Fire(target_t target, WeaponSlotType weapon) const
@@ -914,15 +1013,42 @@ FireErrorType TechnoClass::Can_Fire(target_t target, WeaponSlotType weapon) cons
 
 target_t TechnoClass::Greatest_Threat(ThreatType threat)
 {
+#ifdef GAME_DLL
+    DEFINE_CALL(func, 0x004EF020, target_t, TechnoClass *, ThreatType);
+    return func(this, threat);
+#else
+    //++g_TargetScan;
+    if (!(threat & THREAT_1)) {
+
+    }
+    if (What_Am_I() == RTTI_INFANTRY) {
+
+    }
     return target_t();
+#endif
 }
 
+/**
+ *
+ *
+ */
 void TechnoClass::Assign_Target(target_t target)
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00564F98, void, TechnoClass *, target_t);
-    func(this, target);
-#endif
+    if (m_TarCom != target) {
+        if (!Target_Legal(target)){
+            target = 0;
+        } else if (As_Target() == target) {
+            target = ::As_Target(Get_Cell());
+        } else {
+            ObjectClass *optr = As_Object(target);
+            if (optr != nullptr ) {
+                if (!optr->Is_Active() || optr->Get_Health() == 0) {
+                    target = 0;
+                }
+            }
+        }
+        m_TarCom = target;
+    }
 }
 
 BulletClass *TechnoClass::Fire_At(target_t target, WeaponSlotType weapon)
@@ -935,14 +1061,44 @@ BulletClass *TechnoClass::Fire_At(target_t target, WeaponSlotType weapon)
 #endif
 }
 
-BOOL TechnoClass::Captured(HouseClass *house)
+BOOL TechnoClass::Captured(HouseClass *new_owner)
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00566290, BOOL, TechnoClass *, HouseClass *);
-    return func(this, house);
-#else
-    return false;
-#endif
+    if (m_OwnerHouse == new_owner) {
+        return false;
+    }
+
+    if (m_AttachedTrigger != nullptr) {
+        m_AttachedTrigger->Spring(TEVENT_ENTERED_BY, this);
+    }
+
+    Record_The_Kill();
+
+    m_OwnerHouse->Tracking_Remove(this);
+    new_owner->Tracking_Add(this);
+
+    switch (What_Am_I()) {
+        case RTTI_BUILDING:
+            new_owner->Inc_BuildingsDestroyed(Owner());
+            break;
+        case RTTI_INFANTRY:
+        case RTTI_UNIT:
+        case RTTI_AIRCRAFT:
+        case RTTI_VESSEL:
+            new_owner->Inc_UnitsDestroyed(Owner());
+            break;
+        case RTTI_INFANTRYTYPE:
+        case RTTI_UNITTYPE:
+        case RTTI_AIRCRAFTTYPE:
+        default:
+            break;
+    }
+
+    m_OwnerHouse->Set_UnkHouseType(new_owner->What_Type());
+    Detach_All();
+    m_OwnerHouse = new_owner;
+    Set_Player_Owned();
+
+    return true;
 }
 
 BOOL TechnoClass::Electric_Zap(target_t target, BOOL a2, coord_t a3, uint8_t *a4)
@@ -990,20 +1146,51 @@ void TechnoClass::Draw_Pips(int x, int y, WindowNumberType window) const
 #endif
 }
 
+/**
+ *
+ *
+ */
 void TechnoClass::Do_Uncloak()
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00566D88, void, TechnoClass *);
-    func(this);
-#endif
+    if (m_Cloakable) {
+        if (m_CloakState == CLOAK_CLOAKED || m_CloakState == CLOAK_CLOAKING) {
+            if (m_CloakState == CLOAK_CLOAKED) {
+                g_Map.Flag_To_Redraw(true);
+            }
+            m_CloakState = CLOAK_UNCLOAKING;
+            m_CloakingStage.Set_Stage(0);
+            m_CloakingStage.Set_Delay(1);
+            
+            //this if is a bug fix, prevents earrape volume cloaking on scenario start
+            if ( g_GameFrame > 25 ) {
+                Sound_Effect(m_RTTI == RTTI_VESSEL ? VOC_SUB_SHOW : VOC_IRONCUR9, m_Coord);
+            }
+        }
+    }
 }
 
+/**
+ *
+ *
+ */
 void TechnoClass::Do_Cloak()
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00566E34, void, TechnoClass *);
-    func(this);
-#endif
+    if (m_Cloakable) {
+        if (m_CloakState == CLOAK_UNCLOAKED || m_CloakState == CLOAK_UNCLOAKING) {
+            Detach_All(0);
+            if (m_CloakState == CLOAK_UNCLOAKED) {
+                g_Map.Flag_To_Redraw(true);
+            }
+            m_CloakState = CLOAK_CLOAKING;
+            m_CloakingStage.Set_Stage(0);
+            m_CloakingStage.Set_Delay(1);
+            
+            //this if is a bug fix, prevents earrape volume cloaking on scenario start
+            if ( g_GameFrame > 25 ) {
+                Sound_Effect(m_RTTI == RTTI_VESSEL ? VOC_SUB_SHOW : VOC_IRONCUR9, m_Coord);
+            }
+        }
+    }
 }
 
 /**
@@ -1212,6 +1399,10 @@ void TechnoClass::Techno_Draw_Object(
     }
 }
 
+/**
+ *
+ *
+ */
 int TechnoClass::Anti_Air()
 {
     if (!Is_Weapon_Equipped()) {
@@ -1225,7 +1416,7 @@ int TechnoClass::Anti_Air()
         return 0;
     }
 
-    int effectiveness = weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_LIGHT) * weapon->Get_Range();
+    int effectiveness = (weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_LIGHT) * weapon->Get_Range()) / weapon->Get_ROF();
 
     if (tech_type.Is_Two_Shooter()) {
         effectiveness *= 2;
@@ -1234,6 +1425,10 @@ int TechnoClass::Anti_Air()
     return effectiveness / 50;
 }
 
+/**
+ *
+ *
+ */
 int TechnoClass::Anti_Armor()
 {
     if (!Is_Weapon_Equipped()) {
@@ -1248,8 +1443,9 @@ int TechnoClass::Anti_Armor()
     }
 
     lepton_t range = min<lepton_t>(weapon->Get_Range(), 1024);
-    int effectiveness = weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_HEAVY) * range
-        * weapon->Get_Warhead()->Get_Spread() / weapon->Get_ROF();
+    // needs checking
+    int effectiveness = (weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_HEAVY) * range
+        * weapon->Get_Warhead()->Get_Spread()) / weapon->Get_ROF();
 
     if (tech_type.Is_Two_Shooter()) {
         effectiveness *= 2;
@@ -1262,6 +1458,10 @@ int TechnoClass::Anti_Armor()
     return effectiveness / 50;
 }
 
+/**
+ *
+ *
+ */
 int TechnoClass::Anti_Infantry()
 {
     if (!Is_Weapon_Equipped()) {
@@ -1276,8 +1476,9 @@ int TechnoClass::Anti_Infantry()
     }
 
     lepton_t range = min<lepton_t>(weapon->Get_Range(), 1024);
-    int effectiveness = weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_NONE) * range
-        * weapon->Get_Warhead()->Get_Spread() / weapon->Get_ROF();
+    //needs rechecking
+    int effectiveness = (weapon->Get_Damage() * weapon->Get_Warhead()->Get_Verses(ARMOR_NONE) * range
+        * weapon->Get_Warhead()->Get_Spread()) / weapon->Get_ROF();
 
     if (tech_type.Is_Two_Shooter()) {
         effectiveness *= 2;
@@ -1391,12 +1592,55 @@ void TechnoClass::Kill_Cargo(TechnoClass *object)
 
 WeaponSlotType TechnoClass::What_Weapon_Should_I_Use(target_t target) const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00560B14, WeaponSlotType, const TechnoClass *, target_t);
-    return func(this, target);
-#else
-    return WeaponSlotType();
-#endif
+    if (!Target_Legal(target)) {
+        return WEAPON_SLOT_PRIMARY;
+    }
+
+    ArmorType armor = ARMOR_WOOD;
+
+    if (Target_Targetable(target)) {
+        armor = As_Object(target)->Class_Of().Get_Armor();
+    }
+
+    WeaponTypeClass *wptr = Techno_Class_Of().Get_Weapon(WEAPON_SLOT_PRIMARY);
+    int prim_range = 0;
+
+    if (wptr != nullptr) {
+        WarheadTypeClass *whptr = wptr->Get_Warhead();
+        if (whptr != nullptr) {
+            prim_range = 1000 * whptr->Get_Verses(armor);
+        }
+    }
+
+    if (In_Range(target, WEAPON_SLOT_PRIMARY)) {
+        prim_range *= 2;
+    }
+
+    FireErrorType fire_error = Can_Fire(target, WEAPON_SLOT_PRIMARY);
+    if (fire_error == FIRE_CANT || fire_error == FIRE_ILLEGAL) {
+        prim_range = 0;
+    }
+
+    wptr = Techno_Class_Of().Get_Weapon(WEAPON_SLOT_SECONDARY);
+    int sec_range = 0;
+
+    if (wptr != nullptr) {
+        WarheadTypeClass *whptr = wptr->Get_Warhead();
+        if (whptr != nullptr) {
+            sec_range = 1000 * whptr->Get_Verses(armor);
+        }
+    }
+
+    if (In_Range(target, WEAPON_SLOT_SECONDARY)) {
+        sec_range *= 2;
+    }
+
+    fire_error = Can_Fire(target, WEAPON_SLOT_SECONDARY);
+    if (fire_error == FIRE_CANT || fire_error == FIRE_ILLEGAL) {
+        sec_range = 0;
+    }
+
+    return sec_range > prim_range ? WEAPON_SLOT_SECONDARY : WEAPON_SLOT_PRIMARY;
 }
 
 /**
@@ -1443,4 +1687,63 @@ cell_t TechnoClass::Nearby_Location(TechnoClass *techno) const
     cell_t cell = Coord_To_Cell(techno != nullptr ? techno->Center_Coord() : Center_Coord());
     MZoneType mzone = ttptr->Get_Movement_Zone();
     return g_Map.Nearby_Location(cell, speed, g_Map[cell].Get_Zone(mzone), mzone);
+}
+
+/**
+ *
+ *
+ */
+BOOL TechnoClass::Is_In_Same_Zone(cell_t cellnum) const
+{
+    return g_Map.Is_In_Same_Zone(cellnum, Get_Cell(), Techno_Class_Of().Get_Movement_Zone());
+}
+
+/**
+ *
+ *
+ */
+int TechnoClass::Evaluate_Just_Cell(cell_t cellnum) const
+{
+    if (m_RTTI == RTTI_VESSEL) {
+        return 0;
+    }
+
+    if (m_OwnerHouse->Is_Human()) {
+        return 0;
+    }
+
+    if (!g_Rule.Difficulty_Control(m_OwnerHouse->Get_AI_Difficulty()).DestroyWalls) {
+        return 0;
+    }
+
+    CellClass *cptr = &g_Map[cellnum];
+    if (!cptr->Has_Wall()) {
+        return 0;
+    }
+
+    target_t target = ::As_Target(cellnum);
+    coord_t coord = Cell_To_Coord(cellnum);
+    if (!In_Range(coord, What_Weapon_Should_I_Use(target))) {
+        return 0;
+    }
+
+    WeaponTypeClass *wptr = Techno_Class_Of().Get_Weapon(WEAPON_SLOT_PRIMARY);
+    if (wptr == nullptr || wptr->Get_Warhead() == nullptr) {
+        return 0;
+    }
+
+    //todo confirm its Is_Anti_Ground, TypeBitfield[1] & 0x10
+    if (wptr->Get_Projectile() != nullptr && !wptr->Get_Projectile()->Is_Anti_Ground()) {
+        return 0;
+    }
+
+    if (!wptr->Get_Warhead()->Is_Wall_Destroyer()) {
+        return 0;
+    }
+
+    if (m_OwnerHouse->Is_Ally(cptr->Owner())) {
+        return 0;
+    }
+
+    return Weapon_Range(WEAPON_SLOT_PRIMARY) - Distance(Center_Coord(), coord);
 }

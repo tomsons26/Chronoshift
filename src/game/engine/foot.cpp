@@ -19,6 +19,7 @@
 #include "coord.h"
 #include "gamedebug.h"
 #include "globals.h"
+#include "infantry.h"
 #include "iomap.h"
 #include "missioncontrol.h"
 #include "rules.h"
@@ -209,12 +210,51 @@ BOOL FootClass::Unlimbo(coord_t coord, DirType dir)
     return false;
 }
 
+/**
+ *
+ *
+ */
 void FootClass::Detach(target_t target, int a2)
 {
+    TechnoClass::Detach(target, a2);
+    if (/*!g_SpecialFlag &&*/ m_Archive == target) {
+        m_Archive = 0;
+    }
+    if (m_SuspendedNavCom == target) {
+        m_SuspendedNavCom = 0;
+        m_SuspendedMission = MISSION_NONE;
+    }
+    if (m_NavCom == target) {
+        m_NavCom = 0;
+        m_Paths[0] = FACING_NONE;
+        Restore_Mission();
+    }
+    for (int i = 0; i < NAV_LENGTH; ++i) {
+        if (m_NavList[i] == target) {
+            m_NavList[i] = 0;
+            if (i < NAV_LENGTH - 1) {
+                memmove(&m_NavList[i], &m_NavList[i + 1], sizeof(m_NavList[0]) * (NAV_LENGTH - i) - sizeof(m_NavList[0]));
+            }
+        }
+    }
+    if (m_TarCom == target) {
+        if (m_OwnerHouse->Is_Human()) {
+            m_Paths[0] = FACING_NONE;
+        }
+    }
 }
 
+/**
+ *
+ *
+ */
 void FootClass::Detach_All(int a1)
 {
+    if (m_Team != nullptr && g_ScenarioInit == 0) {
+        m_Team->Remove(this);
+        m_Team = nullptr;
+    }
+    TechnoClass::Detach_All();
 }
 
 /**
@@ -332,17 +372,34 @@ void FootClass::Decode_Pointers()
  */
 int FootClass::Mission_Attack()
 {
-    if (m_TarCom != 0) {
+    if (Target_Legal(m_TarCom)) {
         Approach_Target();
     } else {
         Enter_Idle_Mode();
     }
-    return (900 * MissionControlClass::s_MissionControl[m_Mission].m_Rate) + g_Scen.Get_Random_Value(0, 2);
+    return (900 * Get_Mission_Control(m_Mission).Get_Rate()) + g_Scen.Get_Random_Value(0, 2);
 }
 
+/**
+ *
+ *
+ */
 int FootClass::Mission_Capture()
 {
-    return 0;
+    if (Target_Legal(m_TarCom) && Target_Get_RTTI(m_TarCom) == RTTI_BUILDING && !Target_Legal(m_NavCom)
+        && What_Am_I() == RTTI_INFANTRY) {
+        if (reinterpret_cast<InfantryClass *>(this)->Class_Of().Has_C4()) {
+            Assign_Destination(m_TarCom);
+        }
+    }
+
+    if (!Target_Legal(m_NavCom)) {
+        Enter_Idle_Mode();
+        if (g_Map[Get_Cell()].Cell_Building() != nullptr) {
+            Scatter(0, 1);
+        }
+    }
+    return (900 * Get_Mission_Control(m_Mission).Get_Rate()) + g_Scen.Get_Random_Value(0, 2);
 }
 
 int FootClass::Mission_Guard()
@@ -425,9 +482,37 @@ void FootClass::Death_Announcement(TechnoClass *killer) const
 #endif
 }
 
+/**
+ *
+ *
+ */
 target_t FootClass::Greatest_Threat(ThreatType threat)
 {
-    return target_t();
+    if (m_Bit1_1) {
+        threat &= ~THREAT_2 | THREAT_1;
+    }
+
+    if (m_OwnerHouse->Is_Human() && m_Cloakable && m_Mission == MISSION_GUARD) {
+        return 0;
+    }
+
+    target_t target = 0;
+    //TODO figure out if its 'and' OR a 'and not'
+    if (!(threat & 0x3DF8)) {
+        if (What_Am_I() == RTTI_VESSEL) {
+            threat |= THREAT_VESSELS;
+        }
+
+        threat |= THREAT_BUILDINGS | THREAT_VEHICLES | THREAT_INFANTRY;
+        target_t target = TechnoClass::Greatest_Threat(threat);
+
+        if (m_Bit1_1) {
+            if (!Target_Legal(target)) {
+                m_Bit1_1 = false;
+            }
+        }
+    }
+    return target;
 }
 
 void FootClass::Assign_Destination(target_t dest)
@@ -436,31 +521,38 @@ void FootClass::Assign_Destination(target_t dest)
     m_NavCom = dest;
 }
 
+/**
+ *
+ *
+ */
 coord_t FootClass::Likely_Coord()
 {
     return (m_HeadTo ? m_HeadTo : Target_Coord());
 }
 
+/**
+ *
+ *
+ */
 BOOL FootClass::Start_Driver(coord_t &dest)
 {
-#ifdef GAME_DLL
-    BOOL (*func)(FootClass *, coord_t &) = reinterpret_cast<BOOL (*)(FootClass *, coord_t &)>(0x004C14C8);
-    return func(this, dest);
-#else
     Stop_Driver();
-    if (dest) {
-        m_HeadTo = dest;
-        m_Moving = true;
-        if (g_Map[Coord_To_Cell(dest)].Goodie_Check(this)) {
-            return true;
-        }
-        if (m_IsActive) {
-            m_HeadTo = 0;
-            m_Moving = false;
-        }
+
+    if (dest == 0) {
+        return false;
+    }
+
+    m_HeadTo = dest;
+    m_Moving = true;
+    if (g_Map[Coord_To_Cell(dest)].Goodie_Check(this)) {
+        return true;
+    }
+
+    if (m_IsActive) {
+        m_HeadTo = 0;
+        m_Moving = false;
     }
     return false;
-#endif
 }
 
 BOOL FootClass::Stop_Driver()
@@ -1398,24 +1490,20 @@ PathType *FootClass::Find_Path_Wrapper(cell_t dest, FacingType *buffer, int leng
     return real;
 }
 
+/**
+ *
+ *
+ */
 BOOL FootClass::Is_Allowed_To_Leave_Map() const
 {
-#ifdef GAME_DLL
-    BOOL (*func)(const FootClass *) = reinterpret_cast<BOOL (*)(const FootClass *)>(0x004C36A4);
-    return func(this);
-#else
-    if(!m_LockedOnMap) {
+    if (!m_LockedOnMap) {
         return false;
     }
-    if(!m_IsALoner && m_Mission != MISSION_RETREAT) {
-        /*
-        if(!m_Team->Is_Leaving_Map()) {
-            return false;
-        }
-        */
+    //from dos, todo recheck
+    if (m_IsALoner || m_Mission == MISSION_RETREAT || (m_Team != nullptr && m_Team->Is_Leaving_Map())) {
+        return true;
     }
-    return true;
-#endif
+    return false;
 }
 
 /**
@@ -1426,4 +1514,89 @@ BOOL FootClass::Is_Allowed_To_Leave_Map() const
 BOOL FootClass::Is_On_Priority_Mission()
 {
     return m_Mission == MISSION_ENTER;
+}
+
+/**
+ *
+ *
+ */
+BOOL FootClass::Is_Recruitable(HouseClass *house) const
+{
+    if (house != nullptr && m_OwnerHouse != house) {
+        return false;
+    }
+    if (m_InLimbo) {
+        return false;
+    }
+
+    if (m_Team != nullptr){
+        return false;
+    }
+    
+    return Is_Recruitable_Mission(m_Mission);
+}
+
+/**
+ *
+ *
+ */
+void FootClass::Handle_Navigation_List()
+{
+    if (!Target_Legal(m_NavCom)) {
+        target_t nav_0 = m_NavList[0];
+        if (Target_Legal(nav_0)) {
+            Assign_Destination(m_NavList[0]);
+
+            memmove(m_NavList, &m_NavList[1], sizeof(m_NavList) - sizeof(m_NavList[0]));
+            m_NavList[NAV_LENGTH - 1] = 0;
+
+            if (m_Bit2_4) {
+                for (int i = 0; i < NAV_LENGTH; ++i) {
+                    if (!Target_Legal(m_NavList[i])) {
+                        m_NavList[i] = nav_0;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ *
+ *
+ */
+void FootClass::Queue_Navigation_List(target_t target)
+{
+    if (Target_Legal(target)) {
+        int i;
+        for (i = 0; i < NAV_LENGTH && Target_Legal(m_NavList[i]); ++i) {
+            ;
+        }
+        if (As_Target() == target && i > 0) {
+            m_Bit2_4 = true;
+
+        } else {
+            if (i == 0) {
+                m_Bit2_4 = false;
+            }
+            if (i < NAV_LENGTH) {
+                m_NavList[i] = target;
+            }
+        }
+        if (!Target_Legal(m_NavCom) && m_Mission == MISSION_GUARD) {
+            Enter_Idle_Mode();
+        }
+    }
+}
+
+/**
+ *
+ *
+ */
+void FootClass::Clear_Navigation_List()
+{
+    for (int i = 0; i < NAV_LENGTH; ++i) {
+        m_NavList[i] = 0;
+    }
 }

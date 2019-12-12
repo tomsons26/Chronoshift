@@ -137,7 +137,7 @@ public:
     virtual target_t Greatest_Threat(ThreatType threat);
     virtual void Assign_Target(target_t target);
     virtual BulletClass *Fire_At(target_t target, WeaponSlotType weapon = WEAPON_SLOT_PRIMARY);
-    virtual BOOL Captured(HouseClass *house);
+    virtual BOOL Captured(HouseClass *new_owner);
     virtual BOOL Electric_Zap(target_t target, BOOL a2, coord_t a3 = 0, uint8_t *a4 = nullptr);
     virtual void Renovate();
     virtual uint8_t *Remap_Table() const;
@@ -237,7 +237,10 @@ protected:
     WeaponSlotType What_Weapon_Should_I_Use(target_t target) const;
     int Combat_Damage(WeaponSlotType weapon = WEAPON_SLOT_NONE) const;
     cell_t Nearby_Location(TechnoClass *techno) const;
+    BOOL Is_In_Same_Zone(cell_t cellnum) const;
+    int Evaluate_Just_Cell(cell_t cellnum) const;
 
+public:
     const TechnoTypeClass &Techno_Class_Of() const { return reinterpret_cast<const TechnoTypeClass &>(Class_Of()); }
 
 protected:

@@ -82,6 +82,12 @@ public:
     BOOL Validate();
     ObjectClass *Close_Object(coord_t coord) const;
 
+    inline BOOL Is_In_Same_Zone(cell_t cell1, cell_t cell2, MZoneType mzone) const
+    {
+        DEBUG_ASSERT(mzone == MZONE_NONE);
+        return m_Array[cell1].Get_Zone(mzone) == m_Array[cell2].Get_Zone(mzone);
+    }
+
     cell_t Cell_Number(CellClass *cell) { return m_Array.ID(cell); }
     int Get_Map_Cell_X() const { return m_MapCellX; }
     int Get_Map_Cell_Y() const { return m_MapCellY; }
