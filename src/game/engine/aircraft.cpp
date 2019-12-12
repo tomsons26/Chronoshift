@@ -324,7 +324,11 @@ DamageResultType AircraftClass::Take_Damage(int &damage, int a2, WarheadType war
  *
  *
  */
+<<<<<<< HEAD
 void AircraftClass::Scatter(coord_t coord, BOOL a2, BOOL a3)
+=======
+void AircraftClass::Scatter(coord_t coord, int a2, BOOL a3)
+>>>>>>> stuff
 {
     if (Get_Mission_Control(m_Mission).Can_Scatter()) {
         if (!Class_Of().Is_Airplane()) {
@@ -780,10 +784,13 @@ BOOL AircraftClass::Edge_Of_World_AI()
  */
 BOOL AircraftClass::Process_Take_Off()
 {
+<<<<<<< HEAD
 #ifdef GAME_DLL
     DEFINE_CALL(func, 0x00421580, BOOL, AircraftClass *);
     return func(this);
 #else
+=======
+>>>>>>> stuff
     m_IsLanding = false;
     m_IsTakingOff = true;
 
@@ -796,13 +803,22 @@ BOOL AircraftClass::Process_Take_Off()
     }
     int height = m_Height;
 
+<<<<<<< HEAD
+=======
+    // these checks need cleanup, bit ugly
+
+>>>>>>> stuff
     if (height < 171) {
         if (height == 0) {
             m_Door.Close_Door(5, 4);
             m_Facing = m_BDir;
         } else if (height == 128) {
+<<<<<<< HEAD
         	//TODO FIX ME
             //m_Facing.Set_Desired(Direction(Center_Coord(), As_Coord(m_NavCom)));
+=======
+            m_Facing.Set_Desired(Direction(Center_Coord(), As_Coord(m_NavCom)));
+>>>>>>> stuff
         }
         return false;
     }
@@ -828,7 +844,10 @@ BOOL AircraftClass::Process_Take_Off()
         return true;
     }
     return true;
+<<<<<<< HEAD
 #endif
+=======
+>>>>>>> stuff
 }
 
 /**
@@ -930,3 +949,11 @@ BOOL AircraftClass::Cell_Seems_Ok(cell_t cell, BOOL a3)
     }
     return true;
 }
+<<<<<<< HEAD
+=======
+
+void AircraftClass::Init()
+{
+    g_Aircraft.Free_All();
+}
+>>>>>>> stuff

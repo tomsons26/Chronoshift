@@ -40,6 +40,7 @@ public:
     BuildingClass(const NoInitClass &noinit);
     virtual ~BuildingClass();
 
+<<<<<<< HEAD
     // AbstractClass
     virtual coord_t Center_Coord() const final;
     virtual coord_t Target_Coord() const final;
@@ -105,6 +106,77 @@ public:
     virtual int Toggle_Primary() final;
 
     cell_t Check_Point(CheckPointType check) const; 
+=======
+    void *operator new(size_t size);
+    void *operator new(size_t size, void *ptr) { return ptr; }
+    void operator delete(void *ptr);
+#ifndef COMPILER_WATCOM // Watcom doesn't like this, MSVC/GCC does.
+    void operator delete(void *ptr, void *place) {}
+#endif
+
+    virtual coord_t Center_Coord() const final;
+    //Target_Coord
+    //AI
+
+    // ObjectClass
+    virtual void *Get_Image_Data() const final;
+    //What_Action
+    //What_Action
+    virtual const BuildingTypeClass &Class_Of() const final { return *m_Class; }
+    //Can_Demolish
+    //Can_Player_Fire
+    virtual BOOL Can_Player_Move() const final;
+    virtual coord_t Docking_Coord() const final;
+    //Sort_Y
+    virtual coord_t Exit_Coord() const final;
+    virtual BOOL Limbo() final;
+    //Unlimbo
+    virtual void Detach(target_t target, int a2) final;
+    //Detach_All
+    //Exit_Object
+    //Overlap_List
+    virtual void Draw_It(int x, int y, WindowNumberType window) const final;
+    //Mark
+    virtual void Active_Click_With(ActionType action, ObjectClass *object) final;
+    virtual void Active_Click_With(ActionType action, cell_t cellnum) final;
+    //Take_Damage
+
+    virtual void Fire_Out() final {}
+    virtual int Value() const final;
+    //Receive_Message
+    //Revealed
+    //Repair
+    //Sell_Back
+
+    // MissionClass
+    //Mission_Attack
+    //Mission_Guard
+    //Mission_Harvest
+    //Mission_Unload
+    //Mission_Construction
+    //Mission_Deconstruction
+    //Mission_Repair
+    //Mission_Missile
+
+ 
+    // TechnoClass   
+    //How_Many_Survivors
+    virtual DirType Turret_Facing() const final;
+    //Find_Exit_Cell
+    virtual DirType Fire_Direction() const final;
+    //Crew_Type
+    //Pip_Count
+    virtual void Death_Announcement(TechnoClass *killer) const final;
+    //Can_Fire
+    virtual target_t Greatest_Threat(ThreatType threat) final;
+    virtual void Assign_Target(target_t target) final;
+    //Captured
+    virtual void Enter_Idle_Mode(BOOL a1 = false) final;
+    //Grand_Opening
+    //Update_Buildables
+    virtual uint8_t *Remap_Table() const final;
+    //Toggle_Primary
+>>>>>>> stuff
 
     BuildingType What_Type() const { return m_Class->What_Type(); }
 
@@ -116,6 +188,7 @@ private:
     void Drop_Debris(target_t target);
     void Begin_Mode(BStateType state);
     int Power_Output();
+<<<<<<< HEAD
     int Flush_For_Placement(TechnoClass *techno, cell_t cellnum) const;
     void Update_Radar_Spied();
     void Factory_AI();
@@ -125,6 +198,13 @@ private:
     void Animation_AI();
     void Add_Gap_Effect() {} // To be implemented, inlined in AI().
     void Remove_Gap_Effect();
+=======
+    void Begin_Mode(BStateType state);
+    int Flush_For_Placement(TechnoClass *techno, cell_t cellnum);
+    
+
+    const BuildingTypeClass::AnimControlType &Fetch_Anim_Control() const { return m_Class->Fetch_Anim(m_CurrentState); }
+>>>>>>> stuff
 
 #ifdef GAME_DLL
     friend void Setup_Hooks();

@@ -17,6 +17,7 @@
 #include "audio.h"
 #include "coord.h"
 #include "display.h"
+#include "house.h"
 #include "drawshape.h"
 #include "gamefile.h"
 #include "globals.h"
@@ -203,30 +204,28 @@ void RadarClass::Flag_Cell(cell_t cellnum)
     DisplayClass::Flag_Cell(cellnum);
 }
 
+/**
+ *
+ *
+ */
 BOOL RadarClass::Jam_Cell(cell_t cellnum, HouseClass *house)
 {
-// TODO Needs HouseClass.
-#ifdef GAME_DLL
-    BOOL(*func)
-    (const RadarClass *, cell_t, HouseClass *) =
-        reinterpret_cast<BOOL (*)(const RadarClass *, cell_t, HouseClass *)>(0x005301F0);
-    return func(this, cellnum, house);
-#else
-    return false;
-#endif
+    m_Array[cellnum].Set_Field_A(house->What_Type());
+    if (house != g_PlayerPtr) {
+        Shroud_Cell(cellnum);
+    }
+    Radar_Pixel(cellnum);
+    return true;
 }
 
 BOOL RadarClass::UnJam_Cell(cell_t cellnum, HouseClass *house)
 {
-// TODO Needs HouseClass.
-#ifdef GAME_DLL
-    BOOL(*func)
-    (const RadarClass *, cell_t, HouseClass *) =
-        reinterpret_cast<BOOL (*)(const RadarClass *, cell_t, HouseClass *)>(0x00530274);
-    return func(this, cellnum, house);
-#else
-    return false;
-#endif
+    m_Array[cellnum].Redraw_Objects();
+
+    //needs checking, original is in dos and pc, "Array[cellnum].JammedHouses &= -1 - v1;"
+    m_Array[cellnum].Clear_Field_A(house->What_Type());
+    Radar_Pixel(cellnum);
+    return true;
 }
 
 // Renamed from Get_Jammed

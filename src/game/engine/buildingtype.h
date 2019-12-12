@@ -223,8 +223,13 @@ public:
 
     BuildingType What_Type() const { return m_Type; }
     RTTIType Factory_Type() const { return m_FactoryType; }
+    coord_t Exit_Coord() const { return m_ExitCoord; }
     BOOL Is_Fake() const { return m_Fake; }
     BOOL Is_Capturable() const { return m_Capturable; }
+<<<<<<< HEAD
+=======
+    BOOL Is_Normalized() const { return m_Normalized; }
+>>>>>>> stuff
     BOOL Base_Normal() const { return m_BaseNormal; }
     BOOL Unsellable() const { return m_Unsellable; }
     BOOL Is_Wall() const { return m_Wall; }
@@ -234,6 +239,9 @@ public:
     int Power_Output() const { return m_Power; }
     int Power_Drain() const { return m_Drain; }
     int Storage_Capacity() const { return m_Storage; }
+    BSizeType Building_Size() const { return m_BuildingSize; }
+
+    const AnimControlType &Fetch_Anim(BStateType state) const { return m_Anims[state]; }
 
     static void One_Time();
     static BuildingTypeClass &As_Reference(BuildingType type);

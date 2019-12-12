@@ -67,6 +67,7 @@ VesselClass::VesselClass(const NoInitClass &noinit) :
 
 VesselClass::~VesselClass()
 {
+<<<<<<< HEAD
     if (g_GameActive) {
         if (m_Team != nullptr) {
             m_Team->Remove(this);
@@ -75,6 +76,25 @@ VesselClass::~VesselClass()
 
         m_OwnerHouse->Tracking_Remove(this);
         Destroy_Cargo();
+=======
+    m_Class = nullptr;
+    if (g_GameActive && m_Class != nullptr) {
+        if (m_Team != nullptr) {
+            m_Team->Remove(this);
+            m_Team = nullptr;
+        }
+
+        if (m_OwnerHouse != nullptr) {
+            m_OwnerHouse->Tracking_Remove(this);
+        }
+
+        while (m_Cargo.Has_Cargo()) {
+            ObjectClass *cptr = m_Cargo.Detach_Object();
+            if (cptr != nullptr) {
+                delete cptr;
+            }
+        }
+>>>>>>> stuff
         Limbo();
     }
 
@@ -99,17 +119,50 @@ void VesselClass::operator delete(void *ptr)
     g_Vessels.Free(this_ptr);
 }
 
+/**
+ *
+ *
+ */
 MoveType VesselClass::Can_Enter_Cell(cell_t cellnum, FacingType facing) const
 {
-    DEBUG_ASSERT(m_IsActive);
+    if (cellnum >= MAP_MAX_AREA) {
+        return MOVE_NO;
+    }
 
-#ifdef GAME_DLL
-    MoveType const (*func)(const VesselClass *, cell_t, FacingType) = reinterpret_cast<MoveType const (*)(const VesselClass *, cell_t, FacingType)>(0x00589ECC);
-    return func(this, cellnum, facing);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function called!\n");
-    return MOVE_NONE;
-#endif
+    CellClass &cell = g_Map[cellnum];
+    if (g_ScenarioInit == 0 && g_Map.In_Radar(cellnum) && !Is_Allowed_To_Leave_Map()) {
+        return MOVE_NO;
+    }
+
+    if (cell.Cell_Terrain() != nullptr) {
+        return MOVE_NO;
+    }
+
+    //check this somehow!! /*!Ground[ctpr->Land].Speeds[*(&terptr->t.ThreatPoints + 2) >> 24] */
+    if (g_Ground[cell.Get_Land()].Speeds[Class_Of().Get_Speed()] == fixed_t(0)) {
+        return MOVE_NO;
+    }
+
+    if (cell.Cell_Unoccuppied()) {
+        return MOVE_OK;
+    }
+
+    if (cell.Check_Occupants(OCCUPANT_BUILDING)) {
+        return MOVE_NO;
+    }
+
+    TechnoClass *tpr = cell.Cell_Techno(0, 0);
+    if (tpr != nullptr && tpr->Cloak_State() == 2) {
+        if (!m_OwnerHouse->Is_Ally(tpr)) {
+            return MOVE_CLOAK;
+        }
+    }
+
+    if (cell.Check_Occupants(OCCUPANT_UNIT)) {
+        return MOVE_MOVING_BLOCK;
+    }
+
+    return MOVE_OK;
 }
 
 void VesselClass::AI()
@@ -148,7 +201,7 @@ void VesselClass::AI()
 
     if (m_IsActive) {
         Rotation_AI();
-        Combat_AI();
+        Firing_AI();
 
         if (!Edge_Of_World_AI()) {
             if (Class_Of().Max_Passengers() > 0 && !m_Door.Is_Closed() && Get_Mission() != MISSION_UNLOAD
@@ -549,16 +602,39 @@ void VesselClass::Rotation_AI()
     }
 }
 
-void VesselClass::Combat_AI()
+/**
+ *
+ *
+ */
+void VesselClass::Firing_AI()
 {
-    DEBUG_ASSERT(m_IsActive);
+    if (Target_Legal(m_TarCom) && Is_Weapon_Equipped()) {
+        WeaponSlotType slot = What_Weapon_Should_I_Use(m_TarCom);
+        FireErrorType error = Can_Fire(m_TarCom, slot);
 
-#ifdef GAME_DLL
-    void (*func)(VesselClass *) = reinterpret_cast<void (*)(VesselClass *)>(0x0058D094);
-    return func(this);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function called!\n");
-#endif
+        switch (error) {
+            case FIRE_OK:
+                Fire_At(m_TarCom, slot);
+                break;
+            case FIRE_FACING:
+                if (Class_Of().Is_Turret_Equipped()) {
+                    DirType dir = Direction(Center_Coord(), As_Coord(m_TarCom));
+                    m_SecondaryTurretFacing.Set_Desired(dir);
+                } else if (m_Facing.Has_Not_Changed()) {
+                    DirType dir = Direction(Center_Coord(), As_Coord(m_TarCom));
+                    m_Facing.Set_Desired(dir);
+                }
+                break;
+            case FIRE_CLOAKED:
+                Mark(MARK_5);
+                m_Firing = false;
+                Mark(MARK_4);
+                Do_Uncloak();
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 /**

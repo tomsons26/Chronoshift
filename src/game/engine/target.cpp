@@ -81,6 +81,13 @@ BOOL Target_Is_Techno(target_t target)
     return ptr != nullptr ? ptr->Is_Techno() : false;
 }
 
+BOOL Target_Targetable(target_t target)
+{
+   RTTIType rtti = Target_Get_RTTI(target);
+    return rtti == RTTI_TERRAIN || rtti == RTTI_UNIT || rtti == RTTI_VESSEL || rtti == RTTI_INFANTRY || rtti == RTTI_BUILDING
+        || rtti == RTTI_AIRCRAFT;
+}
+
 BOOL Target_Legal(target_t target)
 {
     return (Target_Get_RTTI(target) != RTTI_NONE && Target_Get_RTTI(target) < RTTI_COUNT && Target_Get_ID(target) >= 0);

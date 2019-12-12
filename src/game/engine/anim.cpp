@@ -15,15 +15,21 @@
  */
 #include "anim.h"
 #include "cell.h"
+#include "building.h"
+#include "callback.h"
+#include "combat.h"
 #include "drawshape.h"
 #include "gameoptions.h"
 #include "house.h"
 #include "iomap.h"
 #include "lists.h"
+#include "logic.h"
+#include "palette.h"
 #include "rules.h"
+#include "session.h"
 #include "target.h"
 #include "smudge.h"
-
+#include "techno.h"
 
 #ifndef GAME_DLL
 TFixedIHeapClass<AnimClass> g_Anims;
@@ -384,14 +390,43 @@ coord_t AnimClass::Adjust_Coord(coord_t coord)
     return coord;
 }
 
-void AnimClass::Do_Atom_Damage(HousesType house, cell_t cell)
+/**
+ *
+ *
+ */
+void AnimClass::Do_Atom_Damage(HousesType house, cell_t cellnum)
 {
-#ifdef GAME_DLL
-    void (*func)(HousesType, cell_t) = reinterpret_cast<void (*)(HousesType, cell_t)>(0x00425AE0);
-    func(house, cell);
-#else
-    DEBUG_ASSERT_PRINT(false, "Unimplemented function called!\n");
-#endif
+    TechnoClass *techno = nullptr;
+
+    if (house != HOUSES_NONE) {
+        for (int i = 0; i < g_Logic.Count(); ++i) {
+            TechnoClass *tptr = (TechnoClass *)g_Logic[i];
+            if (tptr != nullptr && tptr->Is_Techno() && tptr->Owner() == house) {
+                if (tptr->What_Am_I() == RTTI_BUILDING) {
+                    if (reinterpret_cast<BuildingClass *>(tptr)->What_Type() == BUILDING_MSLO) {
+                        techno = tptr;
+                    }
+                }
+            }
+        }
+    }
+
+    int val = 4;
+    int atomdamage = g_Rule.Atom_Damage();
+    if (g_Session.Game_To_Play() != GAME_CAMPAIGN) {
+        val = 3;
+        atomdamage /= 5;
+    }
+
+    if (g_Session.Game_To_Play() == GAME_CAMPAIGN) {
+        g_WhitePalette.Set(30, Call_Back);
+    }
+
+    Wide_Area_Damage(Cell_To_Coord(cellnum), val * 256, atomdamage, techno, WARHEAD_FIRE);
+    Shake_The_Screen(3);
+    if (g_Session.Game_To_Play() == GAME_CAMPAIGN) {
+        g_GamePalette.Set(30, Call_Back);
+    }
 }
 
 /**

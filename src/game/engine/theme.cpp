@@ -21,7 +21,8 @@
 #include "gametypes.h"
 #include "globals.h"
 #include "language.h"
-//#include "scenario.h"
+#include "house.h"
+#include "scenario.h"
 #include "session.h"
 #include "special.h"
 #include <cstdio>
@@ -321,12 +322,6 @@ BOOL ThemeClass::Still_Playing() const
  */
 BOOL ThemeClass::Is_Allowed(ThemeType theme) const
 {
-    // TODO Requires HouseClass and ScenarioClass
-#ifdef GAME_DLL
-    BOOL (*call_Is_Allowed)
-    (const ThemeClass *, ThemeType) = reinterpret_cast<BOOL (*)(const ThemeClass *, ThemeType)>(0x0056C240);
-    return call_Is_Allowed(this, theme);
-#elif 0
     if (theme >= THEME_COUNT) {
         return true;
     }
@@ -337,20 +332,17 @@ BOOL ThemeClass::Is_Allowed(ThemeType theme) const
     }
 
     // Is the player part of the allowed side or is a allowed owner for this theme?
-    if (PlayerPtr != nullptr) {
-        if (!(s_Themes[theme].Side & (1 << PlayerPtr->Side))) {
+    if (g_PlayerPtr != nullptr) {
+        if (!(s_Themes[theme].Side & (1 << g_PlayerPtr->Acts_Like()))) {
             return false;
         }
     }
 
-    if (g_Session.Game_To_Play() == GAME_CAMPAIGN || g_Scen.m_ScenarioIndex >= s_Themes[theme].Scenario) {
+    if (g_Session.Game_To_Play() == GAME_CAMPAIGN || g_Scen.Get_Scenario_Index() >= s_Themes[theme].Scenario) {
         return true;
     }
 
     return false;
-#else
-    return false;
-#endif
 }
 
 /**

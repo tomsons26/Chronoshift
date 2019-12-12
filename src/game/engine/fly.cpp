@@ -13,7 +13,10 @@
  *            LICENSE
  */
 #include "fly.h"
+<<<<<<< HEAD
 #include "coord.h"
+=======
+>>>>>>> stuff
 #include "fixed.h"
 
 /**

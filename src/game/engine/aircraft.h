@@ -97,6 +97,8 @@ private:
     int Paradrop_Cargo();
     BOOL Cell_Seems_Ok(cell_t cell, BOOL a3);
 
+    static void Init();
+
 #ifdef GAME_DLL
     friend void Setup_Hooks();
 

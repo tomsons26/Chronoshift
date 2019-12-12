@@ -78,7 +78,7 @@ class VesselClass : public DriveClass
     int Shape_Number() const;
 
     void Rotation_AI();
-    void Combat_AI();
+    void Firing_AI(); //was Combat_AI, renamed for consistency
     void Repair_AI();
     BOOL Edge_Of_World_AI();
     void Transport_Open_Door();

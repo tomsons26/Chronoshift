@@ -267,6 +267,8 @@ public:
     void Set_UnkHouseType(HousesType house) { m_UnkHouseType = house; }
     RegionClass *Threat_Regions() { return m_ThreatRegions; }
     target_t Chrono_Object() const { return m_ChronoObject; }
+    BOOL Add_To_Built_Scan(InfantryType type) { return m_IScan.m_HaveBuilt |= 1 << type; }
+    BOOL Add_To_Prereq_Scan(InfantryType type) { return m_IScan.m_HumanPrereqs |= 1 << type; }
     BOOL Has_Buildings() const { return m_BScan.m_HaveBuilt != 0; }
     BOOL Spied_My_Radar(HousesType house) const { return (m_RadarSpied & (1 << house)) != 0; }
     BOOL Spied_My_Radar(HouseClass *house) const { return Spied_My_Radar(house->What_Type()); }
@@ -292,9 +294,17 @@ public:
     void Enable_Superweapon(SpecialWeaponType type, BOOL one_time) { m_Specials[type].Enable(one_time); }
     void Set_Preferred_Target(QuarryType target) { m_PreferredTarget = target; }
     BOOL Flag_To_Recalc() { return m_RecalcNeeded = true; }
+    PlayerColorType Get_Color() const { return m_Color; }
     int Get_Power() const { return m_Power; }
+<<<<<<< HEAD
     void Inc_Destroyed_Building_Count(HousesType house) { ++m_BuildingsDestroyed[house]; }
     void Inc_Destroyed_Unit_Count(HousesType house) { ++m_UnitsDestroyed[house]; }
+=======
+    void Inc_BuildingsDestroyed(HousesType house) { ++m_BuildingsDestroyed[house]; }
+    void Dec_BuildingsDestroyed(HousesType house) { --m_BuildingsDestroyed[house]; }
+    void Inc_UnitsDestroyed(HousesType house) { ++m_UnitsDestroyed[house]; }
+    void Dec_UnitsDestroyed(HousesType house) { --m_UnitsDestroyed[house]; }
+>>>>>>> stuff
 
     static void One_Time();
     static void Init();

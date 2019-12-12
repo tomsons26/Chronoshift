@@ -21,6 +21,7 @@
 #include "always.h"
 #include "target.h"
 #include "coord.h"
+#include "target.h"
 #include "facing.h"
 #include "gametypes.h"
 #include "noinit.h"
@@ -77,6 +78,7 @@ public:
     BOOL Is_Foot() const;
     BOOL Is_Ground_Foot() const;
 
+<<<<<<< HEAD
     RTTIType What_Am_I() const { return m_RTTI; } // Fetch the RTTI type ID number.
     int Get_Heap_ID() const { return m_HeapID; } // Fetch the heap ID number for this object.
     coord_t Get_Coord() const { return m_Coord; } // Fetches current coordinate in the game world.
@@ -86,6 +88,35 @@ public:
     void Set_Height(int height) { m_Height = height; }  // Assigns immediate height in the game world.
     BOOL Is_Active() const { return m_IsActive; } // Query if this object is currently active.
     void Set_Inactive() { m_IsActive = false; } // Set this object to inactive.
+=======
+    int Distance_To_Target(target_t target) const;
+    //int Distance_To_Cell(cell_t cell) const { return Distance(Center_Coord(), Cell_To_Coord(cell)); }
+
+    //////////////////
+
+    int Distance_To_Coord(coord_t coord) { return Distance(Center_Coord(), coord); }
+    int Distance_To_Object(AbstractClass *abstract) { return Distance(Center_Coord(), abstract->Target_Coord()); }
+    int Distance_To_Cell(cell_t cell) { return Distance(Coord_To_Cell(Center_Coord()), cell); }
+
+    DirType Direction_To_Target(target_t target) { return Direction(Center_Coord(), As_Coord(target)); }
+    DirType Direction_To_Coord(coord_t coord) { return Direction(Center_Coord(), coord); }
+    DirType Direction_To_Object(AbstractClass *abstract) { return Direction(Center_Coord(), abstract->Target_Coord()); }
+    DirType Direction_To_Cell(cell_t cell) { return Direction(Coord_To_Cell(Center_Coord()), cell); }
+
+
+    cell_t Center_Cell() const { return Coord_To_Cell(Center_Coord()); }
+    cell_t Target_Cell() const { return Coord_To_Cell(Target_Coord()); }
+
+    target_t As_Target() const { return ((m_RTTI & 0xFF) << 24) | (m_HeapID & 0xFFFFFF); }
+    int Get_Heap_ID() const { return m_HeapID; }
+    BOOL Is_Active() const { return m_IsActive; }
+    RTTIType What_Am_I() const { return m_RTTI; }
+    coord_t Get_Coord() const { return m_Coord; }
+    cell_t Get_Cell() const { return Coord_To_Cell(m_Coord); }
+    void Set_Coord(coord_t coord) { m_Coord = coord; }
+    int Get_Height() const { return m_Height; }
+    void Set_Height(int height) { m_Height = height; }
+>>>>>>> stuff
 
 protected:
     RTTIType m_RTTI; // RTTI type ID number for this object, set by derived class constructors.

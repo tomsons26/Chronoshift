@@ -1644,12 +1644,12 @@ void HouseClass::Attacked()
 
 const TeamTypeClass *HouseClass::Suggested_New_Team(int a1)
 {
-#ifdef GAME_DLL
-    const TeamTypeClass *(*func)(HouseClass *, int) = reinterpret_cast<const TeamTypeClass *(*)(HouseClass *, int)>(0x004D6560);
-    return func(this, a1);
-#else
-    return nullptr;
-#endif
+    #ifdef GAME_DLL
+        const TeamTypeClass *(*func)(HouseClass *, int) = reinterpret_cast<const TeamTypeClass *(*)(HouseClass *, int)>(0x004D6560);
+        return func(this, a1);
+    #else
+        return TeamTypeClass::Suggested_New_Team(this, m_AScan.m_HaveBuilt, m_UScan.m_HaveBuilt, m_IScan.m_HaveBuilt, m_VScan.m_HaveBuilt, a1);
+    #endif
 }
 
 /**

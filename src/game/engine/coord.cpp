@@ -77,6 +77,28 @@ int Cell_Distance(cell_t cell1, cell_t cell2)
     return ydiff + xdiff;
 }
 
+int Distance(target_t target1, target_t target2)
+{
+    return Distance(As_Coord(target1), As_Coord(target1));
+}
+
+int Distance(cell_t cell1, cell_t cell2)
+{
+    int ydiff;
+    int xdiff;
+
+    ydiff = std::abs(Cell_Get_Y(cell1) - Cell_Get_Y(cell2));
+    xdiff = std::abs(Cell_Get_X(cell1) - Cell_Get_X(cell2));
+
+    if (ydiff <= xdiff) {
+        ydiff /= 2;
+    } else {
+        xdiff /= 2;
+    }
+
+    return ydiff + xdiff;
+}
+
 /**
  * Moves the x and y values using fixed point trigonometry lookup tables. 
  *
@@ -360,17 +382,30 @@ const int16_t *Coord_Spillage_List(coord_t coord, const TRect<int> &rect, BOOL s
     return _spillage_list;
 }
 
+<<<<<<< HEAD
 DirType Coord_Direction(coord_t coord1, coord_t coord2)
+=======
+DirType Direction(coord_t coord1, coord_t coord2)
+>>>>>>> stuff
 {
     return Desired_Facing256(Coord_Lepton_X(coord1), Coord_Lepton_Y(coord1), Coord_Lepton_X(coord2), Coord_Lepton_Y(coord2));
 }
 
+<<<<<<< HEAD
 DirType Target_Direction(target_t target1, target_t target2)
 {
     return Coord_Direction(As_Coord(target1), As_Coord(target1));
 }
 
 DirType Cell_Direction(cell_t cell1, cell_t cell2)
+=======
+DirType Direction(target_t target1, target_t target2)
+{
+    return Direction(As_Coord(target1), As_Coord(target1));
+}
+
+DirType Direction(cell_t cell1, cell_t cell2)
+>>>>>>> stuff
 {
     return Desired_Facing8(Cell_Get_X(cell1), Cell_Get_Y(cell1), Cell_Get_X(cell2), Cell_Get_Y(cell2));
 }

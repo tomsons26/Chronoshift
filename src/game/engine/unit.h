@@ -30,8 +30,19 @@ public:
     UnitClass(const NoInitClass &noinit);
     virtual ~UnitClass();
 
+    void *operator new(size_t size);
+    void *operator new(size_t size, void *ptr) { return ptr; }
+    void operator delete(void *ptr);
+#ifndef COMPILER_WATCOM // Watcom doesn't like this, MSVC/GCC does.
+    void operator delete(void *ptr, void *place) {}
+#endif
+
     // AbstractClass
     virtual MoveType Can_Enter_Cell(cell_t cellnum, FacingType facing = FACING_NONE) const final;
+<<<<<<< HEAD
+=======
+    virtual void AI() final;
+>>>>>>> stuff
 
     // ObjectClass
     virtual ActionType What_Action(ObjectClass *object) const final;
@@ -46,7 +57,11 @@ public:
     virtual void Active_Click_With(ActionType action, cell_t cellnum) final;
     virtual DamageResultType Take_Damage(
         int &damage, int a2, WarheadType warhead, TechnoClass *object = nullptr, BOOL a5 = false) final;
+<<<<<<< HEAD
     virtual void Scatter(coord_t coord = 0, BOOL a2 = false, BOOL a3 = false) final;
+=======
+    virtual void Scatter(coord_t coord, int a2, BOOL a3 = false) final;
+>>>>>>> stuff
     virtual void Per_Cell_Process(PCPType pcp) final;
     virtual RadioMessageType Receive_Message(RadioClass *radio, RadioMessageType message, target_t &target) final;
 
@@ -78,7 +93,11 @@ public:
     virtual void Approach_Target() final;
 
     // DriveClass
+<<<<<<< HEAD
     virtual void Overrun_Cell(cell_t cellnum, BOOL a2) final;
+=======
+    virtual void Overrun_Cell(cell_t cell, int a2) final;
+>>>>>>> stuff
     virtual BOOL Ok_To_Move(DirType dir) final;
 
     BOOL Edge_Of_World_AI();
@@ -89,10 +108,14 @@ public:
     int Credit_Load();
     BOOL Ore_Check(short &cellnum, int a2, int a3);
     BOOL Goto_Ore(int scan_radius);
+    void Firing_AI();
+    BOOL Goto_Clear_Spot();
+    BOOL Try_To_Deploy();
 
     UnitType What_Type() const { return m_Class->What_Type(); }
 
     HousesType Flag_Owner() const { return m_FlagOwner; }
+    BOOL Is_Dumping() { return m_IsDumping; }
 
 #ifdef GAME_DLL
     friend void Setup_Hooks();

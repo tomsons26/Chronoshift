@@ -15,11 +15,9 @@
  */
 #include "crate.h"
 #include "cell.h"
-#include "gametypes.h"
-#include "globals.h"
-#include "iomap.h"
-#include "overlay.h"
 #include "rules.h"
+#include "iomap.h"
+#include "gamedebug.h"
 #include "scenario.h"
 
 #ifndef GAME_DLL

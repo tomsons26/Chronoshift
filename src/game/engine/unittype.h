@@ -89,6 +89,7 @@ public:
 
     UnitType What_Type() const { return m_Type; }
 
+<<<<<<< HEAD
     BOOL Crusher() const { return m_Crusher; }
     BOOL Is_Harvester() const { return m_Harvester; }
     BOOL Is_Bit16() const { return m_Bit16; }
@@ -96,6 +97,13 @@ public:
     BOOL Is_Viceroid() const { return m_IsViceroid; }
     BOOL Is_Mobile_Gap_Gen() const { return m_IsMobileGapGen; }
     BOOL No_Moving_Fire() const { return m_NoMovingFire; }
+=======
+    BOOL Is_Harvester() const { return m_Harvester; }
+    BOOL Is_Bit16() const { return m_Bit16; }
+    BOOL Is_Bit32() const { return m_Bit32; }
+    BOOL Is_Mobile_Gap_Gen() const { return m_IsMobileGapGen; }
+    BOOL Cant_Fire_Moving() const { return m_NoMovingFire; }
+>>>>>>> stuff
 
     static void One_Time();
     static void Init_Heap();

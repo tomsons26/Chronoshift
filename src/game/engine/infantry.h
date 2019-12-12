@@ -51,32 +51,58 @@ public:
     void operator delete(void *ptr, void *place) {}
 #endif
 
+    // AbstractClass
+    virtual MoveType Can_Enter_Cell(cell_t cellnum, FacingType facing = FACING_NONE) const final;
+    virtual void AI() final;
+
     // ObjectClass
     virtual void *Get_Image_Data() const final;
+    virtual ActionType What_Action(ObjectClass *object) const final;
+    virtual ActionType What_Action(cell_t cellnum) const final;
     virtual const InfantryTypeClass &Class_Of() const final { return *m_Class; }
     virtual int Full_Name() const final;
     virtual BOOL Limbo() final;
+    virtual BOOL Unlimbo(coord_t coord, DirType dir = DIR_NORTH) final;
     virtual void Detach(target_t target, int a2) final;
     virtual BOOL Paradrop(coord_t coord) final;
+    //Overlap_List
     virtual void Draw_It(int x, int y, WindowNumberType window) const final;
     virtual void Active_Click_With(ActionType action, ObjectClass *object) final;
     virtual void Active_Click_With(ActionType action, cell_t cellnum) final;
+    virtual DamageResultType Take_Damage(
+        int &damage, int a2, WarheadType warhead, TechnoClass *object = nullptr, BOOL a5 = false) final;
+    virtual void Scatter(coord_t coord, int a2, BOOL a3 = false) final;
+    virtual void Per_Cell_Process(PCPType pcp) final;
 
     // MissionClass
     virtual int Mission_Attack() final;
 
     // TechnoClass
+    virtual void Response_Select() final;
+    virtual void Response_Move() final;
+    virtual void Response_Attack() final;
     virtual FireErrorType Can_Fire(target_t target, WeaponSlotType weapon = WEAPON_SLOT_PRIMARY) const final;
+    virtual target_t Greatest_Threat(ThreatType threat) final;
     virtual void Assign_Target(target_t target) final;
     virtual BulletClass *Fire_At(target_t target, WeaponSlotType weapon = WEAPON_SLOT_PRIMARY) final;
     virtual BOOL Is_Ready_To_Random_Animate() const final;
+    virtual BOOL Random_Animate() final;
     virtual void Assign_Destination(target_t dest) final;
+    virtual void Enter_Idle_Mode(BOOL a1 = false) final;
 
     // FootClass
+    virtual BOOL Start_Driver(coord_t &dest) final;
     virtual BOOL Stop_Driver() final;
 
     // InfantryClass
     virtual BOOL Do_Action(DoType dotype, BOOL a1 = false);
+
+    int Shape_Number() const;
+    BOOL Edge_Of_World_AI();
+    void Fear_AI();
+    void Firing_AI();
+    void Doing_AI();
+    void Movement_AI();
 
     inline void Set_Occupy_Spot(coord_t coord) { Set_Occupy_Spot(Coord_To_Cell(coord), CellClass::Spot_Index(coord)); }
     inline void Clear_Occupy_Spot(coord_t coord) { Clear_Occupy_Spot(Coord_To_Cell(coord), CellClass::Spot_Index(coord)); }
@@ -93,6 +119,10 @@ public:
 private:
     int Shape_Number() const;
     BOOL Edge_Of_World_AI();
+
+    InfantryType What_Type() const { return m_Class->What_Type(); }
+
+    static void Init();
 
 #ifdef GAME_DLL
     friend void Setup_Hooks();
@@ -118,9 +148,17 @@ public:
     {
         return InfantryClass::Can_Fire(target, weapon);
     }
+    ActionType Hook_What_Action_Cell(cell_t cellnum)
+    {
+        return InfantryClass::What_Action(cellnum);
+    }
     BOOL Hook_Is_Ready_To_Random_Animate()
     {
         return InfantryClass::Is_Ready_To_Random_Animate();
+    }
+    BOOL Hook_Random_Animate()
+    {
+        return InfantryClass::Random_Animate();
     }
 #endif
 

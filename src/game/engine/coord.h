@@ -83,11 +83,14 @@ inline coord_t Coord_Subtract(coord_t coord1, coord_t coord2)
     return Coord_From_Lepton_XY(lx, ly);
 }
 
+<<<<<<< HEAD
 /**
  * Returns coordinates that are centered in the cell
  * operation - coord[0] = 128; coord[2] = 128;
  *
  */
+=======
+>>>>>>> stuff
 inline coord_t Coord_Centered(coord_t coord)
 {
     return (coord & 0xFF00FF00) | 0x00800080;
@@ -251,6 +254,7 @@ inline DirType Cell_Direction8(cell_t cell1, cell_t cell2)
     return Desired_Facing8(Cell_Get_X(cell1), Cell_Get_Y(cell1), Cell_Get_X(cell2), Cell_Get_Y(cell2));
 }
 
+<<<<<<< HEAD
 DirType Coord_Direction(coord_t coord1, coord_t coord2);
 DirType Target_Direction(target_t target1, target_t target2);
 DirType Cell_Direction(cell_t cell1, cell_t cell2);
@@ -266,6 +270,15 @@ inline int Target_Distance(target_t target1, target_t target2)
 }
 
 int Cell_Distance(cell_t cell1, cell_t cell2);
+=======
+DirType Direction(coord_t coord1, coord_t coord2);
+DirType Direction(target_t target1, target_t target2);
+DirType Direction(cell_t cell1, cell_t cell2);
+
+int Distance(coord_t coord1, coord_t coord2);
+int Distance(target_t target1, target_t target2);
+int Distance(cell_t cell1, cell_t cell2);
+>>>>>>> stuff
 
 void Move_Point(int16_t &x, int16_t &y, DirType dir, uint16_t distance);
 coord_t Coord_Move(coord_t coord, DirType dir, uint16_t distance);

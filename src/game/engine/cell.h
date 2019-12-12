@@ -123,6 +123,7 @@ public:
     BOOL Save(Pipe &pipe) const;
     BOOL Has_Crater() const { return m_Smudge != SMUDGE_NONE && SmudgeTypeClass::As_Pointer(m_Smudge)->Is_Crater(); }
     BOOL Has_Bib() const { return m_Smudge != SMUDGE_NONE && SmudgeTypeClass::As_Pointer(m_Smudge)->Is_Bib(); }
+<<<<<<< HEAD
     BOOL Has_Wall() const { return m_Overlay != OVERLAY_NONE && OverlayTypeClass::As_Pointer(m_Overlay)->Is_Wall(); }
     BOOL Has_High_Overlay() const { return m_Overlay != OVERLAY_NONE && OverlayTypeClass::As_Pointer(m_Overlay)->Is_High(); }
     void Clear_Occupants(CellOccupantEnum bit) { m_OccupantBit &= ~bit; }
@@ -130,6 +131,13 @@ public:
     BOOL Check_Occupants(CellOccupantEnum bitmask) const { return m_OccupantBit & bitmask; }
     BOOL Is_Occuppied() const { return m_OccupantBit != OCCUPANT_NONE; }
 
+=======
+    BOOL Has_Wall() { return m_Overlay != OVERLAY_NONE && OverlayTypeClass::As_Pointer(m_Overlay)->Is_Wall(); }
+    void Clear_Occupants(CellOccupantEnum bitmask) { m_OccupantBit &= ~bitmask; }
+    void Set_Occupants(CellOccupantEnum bitmask) { m_OccupantBit |= bitmask; }
+    BOOL Check_Occupants(CellOccupantEnum bitmask) const { return m_OccupantBit & bitmask; }
+    BOOL Cell_Unoccuppied() const { return m_OccupantBit == 0; }
+>>>>>>> stuff
     cell_t Cell_Number() const { return m_CellNumber; }
     int8_t Get_Zone(MZoneType mzone) const { return m_Zones[mzone]; }
     void Set_Zone(MZoneType mzone, int8_t zone) { m_Zones[mzone] = zone; }
