@@ -13,6 +13,7 @@
  *            LICENSE
  */
 #include "fly.h"
+#include "fixed.h"
 
 ImpactType FlyClass::Physics(unsigned int &somevalue, DirType dir)
 {
@@ -25,10 +26,11 @@ ImpactType FlyClass::Physics(unsigned int &somevalue, DirType dir)
 #endif
 }
 
+/**
+ *
+ *
+ */
 void FlyClass::Fly_Speed(int speed, MPHType mph)
 {
-#ifdef GAME_DLL
-    void (*func)(FlyClass *, int, MPHType) = reinterpret_cast<void (*)(FlyClass *, int, MPHType)>(0x004C0764);
-    func(this, speed, mph);
-#endif
+    m_Speed = mph * fixed_t(speed, 256);
 }

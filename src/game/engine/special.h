@@ -44,6 +44,7 @@ public:
     BOOL Is_First_Run() const { return m_FirstRun; }
     void Set_First_Run(BOOL first_run) { m_FirstRun = first_run; }
     BOOL Always_Show_Health() { return m_ShowHealth; }
+    BOOL Capture_The_Flag() { return m_CaptureTheFlag; }
 
     uint32_t Pack() const { return m_SpecialFlags; }
 

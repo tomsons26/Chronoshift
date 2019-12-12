@@ -19,6 +19,7 @@
 #include "globals.h"
 #include "house.h"
 #include "iomap.h"
+#include "gameoptions.h"
 #include "queue.h"
 #include "rules.h"
 #include <algorithm>
@@ -45,14 +46,67 @@ BuildingClass::BuildingClass(const NoInitClass &noinit) :
 BuildingClass::~BuildingClass()
 {}
 
+void *BuildingClass::operator new(size_t size)
+{
+    BuildingClass *this_ptr = g_Buildings.Alloc();
+    if (this_ptr != nullptr) {
+        this_ptr->m_IsActive = true;
+    }
+    return this_ptr;
+}
+
+void BuildingClass::operator delete(void *ptr)
+{
+    BuildingClass *this_ptr = static_cast<BuildingClass *>(ptr);
+    if (this_ptr != nullptr) {
+        this_ptr->m_IsActive = false;
+    }
+    g_Buildings.Free(this_ptr);
+}
+
 /**
  *
  *
- * @address 0x00460AD0
  */
-const BuildingTypeClass &BuildingClass::Class_Of() const
+coord_t BuildingClass::Center_Coord() const
 {
-    return *m_Class;
+    static coord_t _center_offset[BSIZE_COUNT] = {
+        0x00800800,
+        0x008000FF,
+        0x00FF0080,
+        0x00FF00FF,
+        0x018000FF,
+        0x00FF0180,
+        0x01800180,
+        0x00FF0200,
+        0x02800280,
+    };
+
+    return Coord_Add(m_Coord, _center_offset[Class_Of().Building_Size()]);
+}
+
+/**
+ *
+ *
+ */
+DirType BuildingClass::Turret_Facing() const
+{
+    if (Class_Of().Is_Turret_Equipped() || !Target_Legal(m_TarCom)) {
+        return m_Facing.Get_Current();
+    }
+    return ::Direction(Center_Coord(), As_Coord(m_TarCom));
+}
+
+/**
+ *
+ *
+ */
+DirType BuildingClass::Fire_Direction() const
+{
+    if (Class_Of().Is_Turret_Equipped()) {
+        return m_Facing.Get_Current();
+    }
+    return ::Direction(Center_Coord(), As_Coord(m_TarCom));
 }
 
 /**
@@ -64,6 +118,57 @@ void BuildingClass::Death_Announcement(TechnoClass *killer) const
 {
     if (killer != nullptr && m_OwnerHouse->Player_Has_Control()) {
         Speak(VOX_STRUCTURE_DESTROYED);
+    }
+}
+
+/**
+ *
+ *
+ */
+target_t BuildingClass::Greatest_Threat(ThreatType threat)
+{
+    WeaponTypeClass *wptr = Class_Of().Get_Weapon(WEAPON_SLOT_PRIMARY);
+    if (wptr != nullptr) {
+        threat |= wptr->Allowed_Threats();
+    }
+
+    wptr = Class_Of().Get_Weapon(WEAPON_SLOT_SECONDARY);
+    if (wptr != nullptr) {
+        threat |= wptr->Allowed_Threats();
+    }
+    
+    if (m_OwnerHouse->Is_Human()) {
+        threat &= ~THREAT_BUILDINGS;
+    }
+    return TechnoClass::Greatest_Threat(threat);
+}
+
+/**
+ *
+ *
+ */
+void BuildingClass::Assign_Target(target_t target)
+{
+    if (What_Type() != BUILDING_SAM) {
+        if (What_Type() != BUILDING_AGUN && !In_Range(target)) {
+            target = 0;
+        }
+    }
+    TechnoClass::Assign_Target(target);
+}
+
+/**
+ *
+ *
+ */
+void BuildingClass::Enter_Idle_Mode(BOOL a1)
+{
+    if (!a1 || g_ScenarioInit || g_InMapEditor) {
+        Begin_Mode(BSTATE_1);
+        Assign_Mission(MISSION_GUARD);
+    } else {
+        Begin_Mode(BSTATE_0);
+        Assign_Mission(MISSION_CONSTRUCTION);
     }
 }
 
@@ -271,6 +376,34 @@ int BuildingClass::Power_Output()
  *
  *
  */
+coord_t BuildingClass::Docking_Coord() const
+{
+    if (What_Type() == BUILDING_HELIPAD) {
+        return Coord_Add(m_Coord, 0xC00100);
+    }
+    // todo verify this coord
+    if (What_Type() == BUILDING_AIRFIELD) {
+        return Coord_Add(m_Coord, 0x12B0180);
+    }
+    return TechnoClass::Exit_Coord();
+}
+
+/**
+ *
+ *
+ */
+coord_t BuildingClass::Exit_Coord() const
+{
+    if (Class_Of().Exit_Coord() != 0) {
+        return Coord_Add(Class_Of().Exit_Coord(), m_Coord);
+    }
+    return TechnoClass::Exit_Coord();
+}
+
+/**
+ *
+ *
+ */
 BOOL BuildingClass::Limbo()
 {
     if (!m_InLimbo) {
@@ -287,4 +420,45 @@ BOOL BuildingClass::Limbo()
         }
     }
     return TechnoClass::Limbo();
+}
+
+/**
+ *
+ *
+ */
+void BuildingClass::Begin_Mode(BStateType state)
+{
+    m_NextState = state;
+    if (m_CurrentState == BSTATE_NONE || state == BSTATE_0 || g_ScenarioInit != 0) {
+        m_CurrentState = state;
+        m_NextState = BSTATE_NONE;
+        BuildingTypeClass::AnimControlType &anim = Fetch_Anim_Control();
+        int rate = anim.m_Rate;
+        if (Class_Of().Is_Normalized()) {
+            if (state != BSTATE_0) {
+                rate = g_Options.Normalize_Delay(rate);
+            }
+        }
+        m_AnimStage.Set_Delay(rate);
+        m_AnimStage.Set_Stage(anim.m_Start);
+    }
+}
+
+/**
+ *
+ *
+ */
+int BuildingClass::Flush_For_Placement(TechnoClass *techno, cell_t cellnum)
+{
+    return 0;//Class_Of().Flush_For_Placement(cellnum, techno->Get_Owner_House());
+}
+
+
+/**
+ *
+ *
+ */
+uint8_t *BuildingClass::Remap_Table() const
+{
+    return (uint8_t *)m_OwnerHouse->Remap_Table(m_Flasher.Get_Flashed(), Class_Of().Get_Remap());
 }

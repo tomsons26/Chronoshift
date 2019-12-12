@@ -17,6 +17,7 @@
 #include "scenario.h"
 #include "team.h"
 #include "iomap.h"
+#include "missioncontrol.h"
 #include "rules.h"
 #include "target.h"
 
@@ -43,6 +44,24 @@ UnitClass::~UnitClass()
 {
 }
 
+void *UnitClass::operator new(size_t size)
+{
+    UnitClass *this_ptr = g_Units.Alloc();
+    if (this_ptr != nullptr) {
+        this_ptr->m_IsActive = true;
+    }
+    return this_ptr;
+}
+
+void UnitClass::operator delete(void *ptr)
+{
+    UnitClass *this_ptr = static_cast<UnitClass *>(ptr);
+    if (this_ptr != nullptr) {
+        this_ptr->m_IsActive = false;
+    }
+    g_Units.Free(this_ptr);
+}
+
 MoveType UnitClass::Can_Enter_Cell(cell_t cellnum, FacingType facing) const
 {
 #ifdef GAME_DLL
@@ -63,14 +82,24 @@ ActionType UnitClass::What_Action(ObjectClass *object) const
 #endif
 }
 
+/**
+ *
+ *
+ */
 ActionType UnitClass::What_Action(cell_t cellnum) const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0057FA00, ActionType, const UnitClass *, cell_t);
-    return func(this, cellnum);
-#else
-    return ACTION_NONE;
-#endif
+    ActionType action = DriveClass::What_Action(cellnum);
+    if (action == ACTION_MOVE && g_Map[cellnum].Get_Land() == LAND_ORE && Class_Of().Is_Harvester() ) {
+        return ACTION_HARVEST;
+    }
+
+    if (What_Type() == UNIT_MAD_TANK) {
+        if (m_IsDumping /*|| v8 & 62*/) {
+            return ACTION_NO_MOVE;
+        }
+    }
+
+    return action;
 }
 
 /**
@@ -169,10 +198,10 @@ DamageResultType UnitClass::Take_Damage(
 #endif
 }
 
-void UnitClass::Scatter(coord_t coord, int a2, int a3)
+void UnitClass::Scatter(coord_t coord, int a2, BOOL a3)
 {
 #ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00581644, void, UnitClass *, coord_t, int, int);
+    DEFINE_CALL(func, 0x00581644, void, UnitClass *, coord_t, int, BOOL);
     func(this, coord, a2, a3);
 #endif
 }
@@ -225,14 +254,30 @@ int UnitClass::Mission_Harvest()
 #endif
 }
 
+/**
+ *
+ *
+ */
 int UnitClass::Mission_Hunt()
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0057E7D0, int, UnitClass *);
-    return func(this);
-#else
-    return 0;
-#endif
+    if (What_Type() == UNIT_MCV) {
+        switch(m_Status) {
+            case 0:
+                if (Goto_Clear_Spot() && Try_To_Deploy()) {
+                    m_Status = 1;
+                }
+                break;
+            case 1:
+                if (!m_Deploying) {
+                    m_Status = 0;
+                }
+                break;
+            default:
+                break;
+        }
+        return (900 * Get_Mission_Control(m_Mission).Get_Rate()) + g_Scen.Get_Random_Value(0, 2);
+    }
+    return DriveClass::Mission_Hunt();
 }
 
 /**
@@ -267,14 +312,16 @@ int UnitClass::Mission_Repair()
 #endif
 }
 
+/**
+ *
+ *
+ */
 DirType UnitClass::Turret_Facing() const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x004CDB40, DirType, const UnitClass *);
-    return func(this);
-#else
-    return DIR_NONE;
-#endif
+    if (Class_Of().Is_Turret_Equipped()) {
+        return m_TurretFacing.Get_Current();
+    }
+    return m_Facing.Get_Current();
 }
 
 DirType UnitClass::Desired_Load_Dir(ObjectClass *object, cell_t &cellnum) const
@@ -303,7 +350,7 @@ DirType UnitClass::Fire_Direction() const
  */
 InfantryType UnitClass::Crew_Type() const
 {
-    if (Class_Of().Get_Weapon(WEAPON_SLOT_PRIMARY) != nullptr) {
+    if (Is_Weapon_Equipped()) {
         return DriveClass::Crew_Type();
     }
 
@@ -313,14 +360,16 @@ InfantryType UnitClass::Crew_Type() const
     return INFANTRY_C7;
 }
 
+/**
+ *
+ *
+ */
 fixed_t UnitClass::Ore_Load() const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00580874, fixed_t, const UnitClass *);
-    return func(this);
-#else
+    if (What_Type() == UNIT_HARVESTER) {
+        return fixed_t(m_BailCount, g_Rule.Bail_Count());   
+    }
     return fixed_t(0);
-#endif
 }
 
 int UnitClass::Pip_Count() const
@@ -333,24 +382,64 @@ int UnitClass::Pip_Count() const
 #endif
 }
 
+/**
+ *
+ *
+ */
 FireErrorType UnitClass::Can_Fire(target_t target, WeaponSlotType weapon) const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00580554, FireErrorType, const UnitClass *, target_t, WeaponSlotType);
-    return func(this, target, weapon);
-#else
-    return FIRE_NONE;
-#endif
+    FireErrorType fireerror = DriveClass::Can_Fire(target, weapon);
+    if (fireerror != FIRE_OK) {
+        return fireerror;
+    }
+
+    WeaponTypeClass *wptr = Class_Of().Get_Weapon(weapon);
+
+    if (Class_Of().Cant_Fire_Moving() && Target_Legal(m_NavCom)) {
+        return FIRE_MOVING;
+    }
+
+    if (!m_Firing && m_Rotating && wptr->Get_Projectile()->Get_ROT() == 0) {
+        return FIRE_ROTATING;
+    }
+
+    DirType dir = Direction(Center_Coord(), As_Coord(target));
+
+    DirType finaldir;
+
+    if (Class_Of().Is_Turret_Equipped()) {
+        finaldir = dir - m_TurretFacing.Get_Current();
+    } else {
+        finaldir = dir - m_Facing.Get_Current();
+    }
+    DirType absdir = (DirType)std::abs(finaldir);
+    if (wptr->Get_Projectile()->Get_ROT()) {
+        absdir >>= 2;
+    }
+    if (absdir >= 8) {
+        return FIRE_FACING;
+    }
+
+    return DriveClass::Can_Fire(target, weapon);
 }
 
+/**
+ *
+ *
+ */
 target_t UnitClass::Greatest_Threat(ThreatType threat)
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00580F14, target_t, UnitClass *, ThreatType);
-    return func(this, threat);
-#else
-    return 0;
-#endif
+    WeaponTypeClass *wptr = Class_Of().Get_Weapon(WEAPON_SLOT_PRIMARY);
+    if (wptr != nullptr) {
+        threat |= wptr->Allowed_Threats();
+    }
+
+    wptr = Class_Of().Get_Weapon(WEAPON_SLOT_SECONDARY);
+    if (wptr != nullptr) {
+        threat |= wptr->Allowed_Threats();
+    }
+
+    return DriveClass::Greatest_Threat(threat);
 }
 
 BulletClass *UnitClass::Fire_At(target_t target, WeaponSlotType weapon)
@@ -558,33 +647,179 @@ BOOL UnitClass::Goto_Ore(int scan_radius)
     }
 
     // is the cell im under ore?
-    cell_t cellnum = Center_Cell();
-    if (g_Map[cellnum].Get_Land() == LAND_ORE) {
+    cell_t cell = Get_Cell();
+    if (g_Map[cell].Get_Land() == LAND_ORE) {
         return true;
     }
 
+    cell_t adj_cell;
     for (int i = 1; i < scan_radius; ++i) {
         for (int j = -i; j <= i; ++j) {
-            if (Ore_Check(cellnum, j, -i)) {
-                Assign_Destination(::As_Target(cellnum));
+            adj_cell = cell;
+            if (Ore_Check(adj_cell, j, -i)) {
+                Assign_Destination(::As_Target(adj_cell));
                 return false;
             }
 
-            if (Ore_Check(cellnum, j, i)) {
-                Assign_Destination(::As_Target(cellnum));
+            adj_cell = cell;
+            if (Ore_Check(adj_cell, j, i)) {
+                Assign_Destination(::As_Target(adj_cell));
                 return false;
             }
 
-            if (Ore_Check(cellnum, -i, j)) {
-                Assign_Destination(::As_Target(cellnum));
+            adj_cell = cell;
+            if (Ore_Check(adj_cell, -i, j)) {
+                Assign_Destination(::As_Target(adj_cell));
                 return false;
             }
 
-            if (Ore_Check(cellnum, i, j)) {
-                Assign_Destination(::As_Target(cellnum));
+            adj_cell = cell;
+            if (Ore_Check(adj_cell, i, j)) {
+                Assign_Destination(::As_Target(adj_cell));
                 return false;
             }
         }
     }
     return false;
+}
+
+/**
+ *
+ *
+ */
+void UnitClass::Firing_AI()
+{
+    if (Target_Legal(m_TarCom) && Is_Weapon_Equipped()) {
+        WeaponSlotType slot = What_Weapon_Should_I_Use(m_TarCom);
+        FireErrorType error = Can_Fire(m_TarCom, slot);
+
+        switch (error) {
+            case FIRE_OK:
+                if (Class_Of().Is_Bit16()) {
+                    Mark(MARK_5);
+                    m_Firing = false;
+                    Mark(MARK_4);
+                }
+                Fire_At(m_TarCom, slot);
+                break;
+            case FIRE_FACING:
+                if (!Class_Of().Is_Bit32() || What_Type() == UNIT_DEMO_TRUCK) {
+                    if (!Target_Legal(m_NavCom)) {
+                        DirType dir = Direction(Center_Coord(), As_Coord(m_TarCom));
+                        m_Facing.Set_Desired(dir);
+                        m_TurretFacing.Set_Desired(m_Facing.Get_Desired());
+                    }
+                } else {
+                    DirType dir = Direction(Center_Coord(), As_Coord(m_TarCom));
+                    m_TurretFacing.Set_Desired(dir);
+                }
+                break;
+            case FIRE_CLOAKED:
+                Mark(MARK_5);
+                m_Firing = false;
+                Mark(MARK_4);
+                Do_Uncloak();
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+/**
+ *
+ *
+ */
+BOOL UnitClass::Goto_Clear_Spot()
+{
+    static int _offsets[] ={
+        -128, -256, -255, -257,
+        -384, -383, -385, -382,
+        -386, -512, -511, -513,
+        -510, -514, 128, 256,
+        257, 255, 384, 385,
+        383, 386, 382, 512,
+        513, 511, 514, 510,
+        -1, -2, -3, -4,
+        1, 2, 3, 4,
+        0
+    };
+
+    BuildingTypeClass &bptr = BuildingTypeClass::As_Reference(BUILDING_FACT);
+
+    Mark(MARK_REMOVE);
+
+    if (!Target_Legal(m_NavCom) && bptr.Legal_Placement(AdjacentCell[7] + Get_Cell())) {
+        Mark(MARK_PUT);
+        return true;
+    }
+
+    if (!Target_Legal(m_NavCom)) {
+        int *offset = _offsets;
+        while (!*offset != 0) {
+            cell_t cell = Coord_To_Cell(m_Coord) + *offset;
+            ++offset;
+
+            if (bptr.Legal_Placement(cell + AdjacentCell[7])) {
+                Assign_Destination(::As_Target(cell));
+                break;
+            }
+        }  
+    }
+
+    Mark(MARK_PUT);
+    if (!Target_Legal(m_NavCom)) {
+        if (!m_OwnerHouse->Is_Human()) {
+            Scatter(0, 0, 0);
+        }
+    }
+    return false;
+}
+
+BOOL UnitClass::Try_To_Deploy()
+{
+#ifdef GAME_DLL
+    DEFINE_CALL(func, 0x0057B8F4, BOOL, UnitClass *);
+    return func(this);
+#else
+    return false;
+#endif
+}
+
+void UnitClass::AI()
+{
+    DriveClass::AI();
+    if (m_IsActive && m_Height <= 0) {
+        if (m_Mission != MISSION_HARVEST) {
+            m_IsHarvesting = false;
+        }
+        Firing_AI();
+        if (m_IsActive) {
+            //Rotation_AI();
+            if (!Edge_Of_World_AI()) {
+                //Reload_AI();
+                if (Class_Of().Max_Passengers() > 0) {
+                    if (/**(&this->d.f.t.Door.DoorTimer.Delay + 2) >> 24*/ 1) {
+                        if (m_Mission != MISSION_UNLOAD && Transmit_Message(RADIO_NEED_A_LIFT) != RADIO_ROGER) {
+                            APC_Close_Door();
+                        }
+                    }
+                }
+
+                if (!m_IsDumping && !m_Moving /*!(*(&this->d.f.t.Door.DoorTimer.Delay + 2) >> 24)*/) {
+                    Commence();
+                }
+
+                if (m_CloakState == 2 && m_FlagOwner != HOUSES_NONE) {
+                    Do_Shimmer();
+                }
+
+                if (Class_Of().Is_Mobile_Gap_Gen()) {
+                    if (!m_Moving && !(g_GameFrame % 15)) {
+                        //Shroud_Regen();
+                    }
+                }
+            }
+        }
+    }
 }

@@ -2170,7 +2170,7 @@ void DisplayClass::Redraw_Icons()
     for (int16_t y = -Coord_Sub_Cell_Y(m_DisplayPos); y <= m_DisplayHeight; y += 256) {
         for (int16_t x = -Coord_Sub_Cell_X(m_DisplayPos); x <= m_DisplayWidth; x += 256) {
             cell_t cellnum = Coord_To_Cell(Coord_Add(m_DisplayPos, Coord_From_Lepton_XY(x, y)));
-            coord_t coord = Cell_To_Coord(cellnum) & 0xFF00FF00;
+            coord_t coord = Coord_Top_Left(Cell_To_Coord(cellnum));
             int draw_x = 0;
             int draw_y = 0;
 
@@ -2614,7 +2614,7 @@ BOOL DisplayClass::Good_Reinforcement_Cell(cell_t cell1, cell_t cell2, SpeedType
 coord_t DisplayClass::Closest_Free_Spot(coord_t coord, BOOL skip_occupied) const
 {
     if (!Coord_Is_Negative(coord)) {
-        return 0x800080; // Middle of cell 0, the top left cell off the edge of visible map.
+        return 0x00800080; // Center of cell 0, the top left cell off the edge of visible map.
     }
 
     cell_t cellnum = Coord_To_Cell(coord);

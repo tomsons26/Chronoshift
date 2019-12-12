@@ -1064,6 +1064,32 @@ void Setup_Hooks()
     Hook_Function(0x0056016C, TeamTypeClass::Suggested_New_Team);
     Hook_Function_Const(0x005600C4, &TeamTypeClass::Create_One_Of);
     Hook_Function_Const(0x00560114, &TeamTypeClass::Destroy_All_Of);
+
+    // infantry.cpp
+    //Hook_Function(0x004ED57C, *InfantryClass::AI);
+    /////Hook_Function(0x004F24B0, *InfantryClass::Get_Image_Data);
+    //Hook_Function(0x004F0634, *InfantryClass::Hook_What_Action_Cell);//seems to work
+    Hook_Function(0x004F2564, *InfantryClass::Paradrop);//seems to work
+    //Hook_Function(0x004EC3AC, *InfantryClass::Hook_Draw_It);//seems to work
+    /////Hook_Function(0x004F03D4, *InfantryClass::Hook_Active_Click_With_Obj);
+    /////Hook_Function(0x004F049C, *InfantryClass::Hook_Full_Name);
+    Hook_Function(0x004EEDB8, *InfantryClass::Limbo);//seems to work
+    Hook_Function(0x004EEEAC, *InfantryClass::Unlimbo);//seems to work
+    Hook_Function(0x004ED1FC, *InfantryClass::Detach);
+    Hook_Function(0x004F0548, *InfantryClass::Mission_Attack);
+    /////Hook_Function(0x004EDF98, *InfantryClass::Hook_Can_Fire);
+    /////Hook_Function(0x004ED478, *InfantryClass::Assign_Target);
+    /////Hook_Function(0x004EEE00, *InfantryClass::Fire_At);
+    /////Hook_Function(0x004F2504, *InfantryClass::Hook_Is_Ready_To_Random_Animate);
+    /////Hook_Function(0x004EE22C, *InfantryClass::Hook_Random_Animate);
+    /////Hook_Function(0x004EE03C, *InfantryClass::Enter_Idle_Mode);
+    /////Hook_Function(0x004EEC3C, *InfantryClass::Start_Driver);
+    /////Hook_Function(0x004EEB64, *InfantryClass::Stop_Driver);
+    /////Hook_Function_Const(0x004EC224, &InfantryClass::Shape_Number);
+    ///////Hook_Function(0x004F0418, *InfantryClass::Set_Occupy_Spot);
+    ///////Hook_Function(0x004F045C, *InfantryClass::Clear_Occupy_Spot);
+    /////Hook_Function(0x004F0DB4, *InfantryClass::Edge_Of_World_AI);
+    /////Hook_Function(0x004F0C48, *InfantryClass::Fear_AI);
 #endif
 }
 
