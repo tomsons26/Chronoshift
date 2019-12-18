@@ -86,6 +86,8 @@
 
 #define TUTORIAL_TEXT_COUNT 225
 
+#define SETTINGS_INI "chronoshift.ini"
+
 #ifdef PLATFORM_WINDOWS
 #ifdef GAME_DLL
 extern HWND &g_MainWindow;

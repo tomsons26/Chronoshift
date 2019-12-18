@@ -325,7 +325,7 @@ int main(int argc, char **argv)
     }
 
     // TODO: Search for this in the user home folder, then in game folder as fallback.
-    RawFileClass settingsfile("chronoshift.ini");
+    RawFileClass settingsfile(SETTINGS_INI);
     INIClass settingsini;
 
     // If we was unable to find the settings file, copy them from the original
