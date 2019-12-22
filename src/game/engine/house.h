@@ -290,6 +290,7 @@ public:
     void Set_Preferred_Target(QuarryType target) { m_PreferredTarget = target; }
     BOOL Flag_To_Recalc() { return m_RecalcNeeded = true; }
     int Get_Power() const { return m_Power; }
+    int Get_Drain() const { return m_Drain; }
 
     static void One_Time();
     static void Init();

@@ -18,6 +18,7 @@
 #include "dipthong.h"
 #include "gamedebug.h"
 #include "mixfile.h"
+#include <algorithm>
 #include <cstdio>
 
 using std::snprintf;
@@ -46,6 +47,9 @@ const char TXT_CONFIRM_QUIT[] = { "Are you sure you want to quit?" };
 const char TXT_CHRONOSHIFT_TITLE[] = { "Chronoshit" };
 const char TXT_CHRONOSHIFT_NOTE[] = { "Powered by Chronoshit" };
 const char TXT_CHRONOSHIFT_WEBSITE[] = { "https://github.com/TheAssemblyArmada/Chronoshift" };
+
+
+char g_CustomTextBuffer[256] = {0};
 
 // clang-format off
 
@@ -408,6 +412,10 @@ const char *Get_Language_Char()
 
 const char *Text_String(int str_id)
 {
+    if (str_id == TXT_CUSTOM_TXT) {
+        return g_CustomTextBuffer;
+    }
+
     if (str_id >= TXT_ADDITIONAL_FIRST) {
         str_id -= TXT_ADDITIONAL_MAGIC_NUM; // ground the value to be zero based.
         DEBUG_ASSERT(str_id < (TXT_ADDITIONAL_FIRST + TXT_ADDITIONAL_COUNT));
@@ -441,4 +449,10 @@ const char *Text_String(int str_id)
 const char *Mission_Text_String(int str_id)
 {
     return nullptr;
+}
+
+void Set_Custom_Text(char *text)
+{
+    int len = std::max<int>(strlen(text), 256);
+    strncpy(g_CustomTextBuffer, text, len);
 }

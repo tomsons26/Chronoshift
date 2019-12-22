@@ -109,6 +109,24 @@ uint16_t __cdecl String_Pixel_Width(const char *string)
     return 0;
 }
 
+uint16_t __cdecl String_Pixel_Height(const char *string)
+{
+    uint16_t width;
+
+    if (string != nullptr) {
+        width = g_FontHeight;
+
+        while (*string != '\0') {
+            if (*string == '\r') {
+                width += g_FontHeight;
+            }
+            ++string;
+        }
+        return width;
+    }
+    return 0;
+}
+
 int __cdecl Buffer_Print(GraphicViewPortClass &vp, const char *string, int x, int y, uint8_t fground, uint8_t bground)
 {
     FontHeader *fntheader = reinterpret_cast<FontHeader *>(g_FontPtr);

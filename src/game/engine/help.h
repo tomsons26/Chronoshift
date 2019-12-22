@@ -83,6 +83,7 @@ private:
     static int16_t s_OverlapList[HELP_OVERLAP_BUFFER];
     static char *s_HelpText;
 #endif
+    static int s_HelpHeight;
 };
 
 #endif // HELP_H

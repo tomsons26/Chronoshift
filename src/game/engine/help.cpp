@@ -28,6 +28,8 @@ int16_t HelpClass::s_OverlapList[60];
 char *HelpClass::s_HelpText = nullptr;
 #endif
 
+int HelpClass::s_HelpHeight = 0;
+
 /**
  * 0x004D2270
  */
@@ -100,24 +102,25 @@ void HelpClass::Draw_It(BOOL force_redraw)
     }
 
     if (m_CountDownTimer == 0 && g_LogicPage->Lock()) {
+        g_LogicPage->Fill_Rect(m_HelpXPos - 1, m_HelpYPos - 1, m_HelpWidth + m_HelpXPos + 1, s_HelpHeight + m_HelpYPos, COLOR_BLACK);
         Plain_Text_Print(m_HelpTextID, m_HelpXPos, m_HelpYPos, m_HelpTextColor, COLOR_BLACK, TPF_NOSHADOW | TPF_MAP);
-        g_LogicPage->Draw_Rect(m_HelpXPos - 1, m_HelpYPos - 1, m_HelpWidth + m_HelpXPos + 1, g_FontHeight + m_HelpYPos, m_HelpTextColor);
+        g_LogicPage->Draw_Rect(m_HelpXPos - 1, m_HelpYPos - 1, m_HelpWidth + m_HelpXPos + 1, s_HelpHeight + m_HelpYPos, m_HelpTextColor);
         
         if (m_HelpCost != 0) {
             snprintf(buffer, sizeof(buffer), "$%d", m_HelpCost);
             int stringwidth = String_Pixel_Width(buffer);
-            Plain_Text_Print(buffer, m_HelpXPos, m_HelpYPos + g_FontHeight, m_HelpTextColor, COLOR_BLACK, TPF_NOSHADOW | TPF_MAP);
+            Plain_Text_Print(buffer, m_HelpXPos, m_HelpYPos + s_HelpHeight, m_HelpTextColor, COLOR_BLACK, TPF_NOSHADOW | TPF_MAP);
             
             g_LogicPage->Draw_Rect(m_HelpXPos - 1,
-                m_HelpYPos + g_FontHeight,
+                m_HelpYPos + s_HelpHeight,
                 stringwidth + m_HelpXPos + 1,
-                g_FontHeight + m_HelpYPos + g_FontHeight - 1,
+                s_HelpHeight + m_HelpYPos + s_HelpHeight - 1,
                 m_HelpTextColor);
 
             g_LogicPage->Draw_Line(m_HelpXPos,
-                m_HelpYPos + g_FontHeight,
+                m_HelpYPos + s_HelpHeight,
                 m_HelpXPos + std::min(stringwidth + 1, m_HelpWidth) - 1,
-                m_HelpYPos + g_FontHeight,
+                m_HelpYPos + s_HelpHeight,
                 COLOR_BLACK);
         }
 
@@ -207,6 +210,7 @@ void HelpClass::Set_Text(int string_id)
         m_HelpTextID = string_id;
         Plain_Text_Print(0, 0, 0, 0, 0, TPF_NOSHADOW | TPF_MAP); // Clears the formatting from previous calls.
         m_HelpWidth = String_Pixel_Width(Text_String(m_HelpTextID));
+        s_HelpHeight = String_Pixel_Height(Text_String(m_HelpTextID));
 
         if (m_HelpForceDraw) {
             m_HelpXPos = m_HelpMouseXPos - m_HelpWidth;
@@ -223,7 +227,7 @@ void HelpClass::Set_Text(int string_id)
                 m_HelpXPos -= x_right - x_limit;
             }
             
-            int y_bottom = m_HelpYPos + 20;
+            int y_bottom = s_HelpHeight + m_HelpYPos + 20;
 
             if (y_bottom > y_limit) {
                 m_HelpYPos -= y_bottom - y_limit;

@@ -1055,7 +1055,7 @@ void Setup_Hooks()
     Hook_Function(0x0055FFD4, TeamTypeClass::As_Pointer);
     Hook_Function(0x00560020, TeamTypeClass::Mission_From_Name);
     Hook_Function(0x00560070, TeamTypeClass::Name_From_Mission);
-    Hook_Function(0x00560368, TeamTypeClass::Read_INI);
+    //Hook_Function(0x00560368, TeamTypeClass::Read_INI);
     Hook_Function(0x0056076C, TeamTypeClass::Write_INI);
     Hook_Function(0x00560248, TeamTypeClass::From_Name);
     Hook_Function(0x0056016C, TeamTypeClass::Suggested_New_Team);

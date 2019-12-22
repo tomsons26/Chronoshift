@@ -46,8 +46,12 @@ BOOL PowerClass::PowerButtonClass::Action(unsigned flags, KeyNumType &key)
 
     g_Map.Override_Mouse_Shape(MOUSE_POINTER);
 
-    int str_id = (g_PlayerPtr->Power_Fraction() < fixed_t(1, 1) || g_PlayerPtr->Get_Power() > 0) ? TXT_POWER_OUTPUT : TXT_POWER_OUTPUT_LOW;
-    g_Map.Help_Text(str_id, -1, -1, GadgetClass::Get_Color_Scheme()->MediumColor);
+    //int str_id = (g_PlayerPtr->Power_Fraction() < fixed_t(1, 1) || g_PlayerPtr->Get_Power() > 0) ? TXT_POWER_OUTPUT : TXT_POWER_OUTPUT_LOW;
+    
+    char pwrstr[128];
+    snprintf(pwrstr, sizeof(pwrstr), "Power = %d\rDrain = %d", g_PlayerPtr->Get_Power(), g_PlayerPtr->Get_Drain());
+    Set_Custom_Text(pwrstr);
+    g_Map.Help_Text(TXT_CUSTOM_TXT, -1, -1, GadgetClass::Get_Color_Scheme()->MediumColor);
 
     GadgetClass::Action(flags, key);
     return true;

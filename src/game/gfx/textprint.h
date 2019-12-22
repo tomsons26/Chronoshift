@@ -74,6 +74,7 @@ extern uint8_t byte_608988[];
 void __cdecl Set_Font_Palette_Range(uint8_t *colors, uint8_t first, uint8_t last);
 void *__cdecl Set_Font(void *font);
 uint16_t __cdecl String_Pixel_Width(const char *string);
+uint16_t __cdecl String_Pixel_Height(const char *string);
 int __cdecl Char_Pixel_Width(char letter);
 int __cdecl Buffer_Print(GraphicViewPortClass &vp, const char *string, int x, int y, uint8_t fground, uint8_t bground);
 

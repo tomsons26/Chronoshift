@@ -760,6 +760,8 @@ enum TextEnum
     //
     TXT_MPMAP_MAGIC_NUM = 5000, //
 
+    TXT_CUSTOM_TXT = 9001, 
+
     TXT_MAX = 9999
 
 };
@@ -797,5 +799,5 @@ const char *Language_Name(const char *filename);
 const char *Get_Language_Char();
 const char *Text_String(int str_id);
 const char *Mission_Text_String(int str_id);
-
+void Set_Custom_Text(char *string);
 #endif // LANGUAGE_H
