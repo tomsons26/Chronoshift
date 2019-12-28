@@ -34,6 +34,7 @@ enum CommandType
 
 class ConnectionClass
 {
+    friend class IPXGlobalConnClass;
 #pragma pack(push,1)
     struct PacketHeader {
         uint16_t Type;

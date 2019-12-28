@@ -29,10 +29,10 @@ class IPXConnClass : public ConnectionClass
 public:
     IPXConnClass(int squeue_size, int rqueue_size, int buff_size, uint16_t type, IPXAddressClass *ip_address,
         int connection_id, char *connection_name, int exbuffsize);
-    ~IPXConnClass() {}
+    virtual ~IPXConnClass() {}
 
-    void Init();
-    BOOL Send(void *src, int src_len, void *unknown1, int unknown2);
+    virtual void Init() override;
+    virtual int Send(uint8_t *data, int32_t datalen, void *ack_data, int32_t ack_datalen) override;
 
     static void Configure(unsigned short socket, int connection_num, ECB *listen_ecb, ECB *send_ecb,
         IPXHEADER *listen_header, IPXHEADER *send_header, char *listen_buf, char *send_buf, long handler, int packet_len);

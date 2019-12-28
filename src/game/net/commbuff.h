@@ -30,6 +30,7 @@ enum CommFlags {
 
 class CommBufferClass
 {
+    friend class IPXGlobalConnClass;
 public:
     struct SendQueueType
     {

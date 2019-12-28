@@ -98,9 +98,9 @@ BOOL IPXConnClass::Stop_Listening()
  *
  *
  */
-BOOL IPXConnClass::Send(void *src, int src_len, void *unknown1, int unknown2)
+int IPXConnClass::Send(uint8_t *data, int32_t datalen, void *ack_data, int32_t ack_datalen)
 {
-    return IPXConnClass::Send_To(src, src_len, &m_IPAddress, m_UseSomeNode ? m_SomeNode : nullptr);
+    return IPXConnClass::Send_To(data, datalen, &m_IPAddress, m_UseSomeNode ? m_SomeNode : nullptr);
 }
 
 /**
