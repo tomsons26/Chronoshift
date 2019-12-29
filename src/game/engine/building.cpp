@@ -21,6 +21,7 @@
 #include "iomap.h"
 #include "queue.h"
 #include "rules.h"
+#include "session.h"
 #include <algorithm>
 
 #ifndef GAME_DLL
@@ -772,12 +773,85 @@ void BuildingClass::Charging_AI()
 #endif
 }
 
+/**
+ *
+ *
+ */
 void BuildingClass::Repair_AI()
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0045FE2C, void, BuildingClass *);
-    func(this);
-#endif
+
+    if (g_Rule.IQ_Controls().m_RepairSell <= m_OwnerHouse->Get_Current_IQ() && m_Mission != MISSION_CONSTRUCTION
+        && m_Mission != MISSION_DECONSTRUCTION) {
+        Repair_AI1();
+    }
+
+    if (m_Bit16) {
+        Repair_AI2();
+    }
+}
+
+/**
+ *
+ *
+ */
+void BuildingClass::Repair_AI1()
+{
+    if (Can_Repair()) {
+        // do we have enough money to repair?
+        if (m_OwnerHouse->Available_Money() >= g_Rule.Credit_Reserve()) {
+            // are we not flagged to repair yet?
+            if (!m_OwnerHouse->Is_Repairing() && !m_Bit16) {
+                if (m_Bit2_4 || m_Bit2 || (m_OwnerHouse->Is_Human() || g_Session.Game_To_Play() != GAME_CAMPAIGN)) {
+                    m_OwnerHouse->Set_Repairing(true);
+                    Repair(1);
+                    if (!m_OwnerHouse->Is_Human()) {
+                        int delay = g_Scen.Get_Random_Value(225 *m_OwnerHouse->Get_Repair_Delay(), (900 * m_OwnerHouse->Get_Repair_Delay()) * 2);
+                        m_OwnerHouse->Set_Repair_Timer(delay);
+                    }
+                }
+            }
+        } else if ((g_Session.Game_To_Play() != GAME_CAMPAIGN || m_Bit4) && m_IsTickedOff) {
+            // do the current iq controls allow this?
+            if (g_Rule.IQ_Controls().m_SellBack <= m_OwnerHouse->House_Static().Get_TechLevel()
+                && g_Scen.Get_Random_Value(0, 50) < m_OwnerHouse->House_Static().Get_TechLevel()) {
+                // are any triggers attached?
+                if (m_AttachedTrigger == nullptr) {
+                    // is the building not the conyard and is is below red condition of health?
+                    if (What_Type() != BUILDING_FACT && Health_Ratio() < g_Rule.Condition_Red()) {
+                        Sell_Back(1);
+                    }
+                }
+            }
+        }
+    }
+}
+/**
+ *
+ *
+ */
+void BuildingClass::Repair_AI2()
+{
+    if ((g_GameFrame % (900 * g_Rule.Get_Repair_Rate())) == 0) {
+        m_Bit32 = !m_Bit32;
+        Mark(MARK_REDRAW);
+
+        int repair_cost = Class_Of().Repair_Cost();
+        int repair_step = Class_Of().Repair_Step();
+        // can we afford the repair?
+        if (m_OwnerHouse->Available_Money() <= repair_cost) {
+            m_OwnerHouse->Spend_Money(repair_cost);
+            m_Health += repair_step;
+            // check if we are done repairing
+            if (m_Health >= Class_Of().Get_Strength()) {
+                // set object's health to its max if we overshot it repairing it
+                m_Health = Class_Of().Get_Strength();
+                m_Bit16 = false;
+            }
+        } else {
+            // can't afford repairing so flag to stop
+            m_Bit16 = false;
+        }
+    }
 }
 
 void BuildingClass::Animation_AI()

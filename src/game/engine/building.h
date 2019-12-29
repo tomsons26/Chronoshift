@@ -122,6 +122,8 @@ private:
     void Rotation_AI();
     void Charging_AI();
     void Repair_AI();
+    inline void Repair_AI1();
+    inline void Repair_AI2();
     void Animation_AI();
     void Add_Gap_Effect() {} // To be implemented, inlined in AI().
     void Remove_Gap_Effect();
@@ -159,6 +161,17 @@ private:
     BOOL m_Bit8 : 1; // 8
     BOOL m_Bit16 : 1; // 16
     BOOL m_Bit32 : 1; // 32
+    BOOL m_Bit64 : 1; // 64
+    BOOL m_Bit128 : 1; // 128
+
+    BOOL m_Bit2_1 : 1; // 1
+    BOOL m_Bit2_2 : 1; // 2
+    BOOL m_Bit2_4 : 1; // 4
+    BOOL m_Bit2_8 : 1; // 8
+    BOOL m_Bit2_16 : 1; // 16
+    BOOL m_Bit2_32 : 1; // 32
+    BOOL m_Bit2_64 : 1; // 64
+    BOOL m_Bit2_128 : 1; // 128
 #else
     bool m_Bit1;
     bool m_Bit2;
@@ -166,6 +179,8 @@ private:
     bool m_Bit8;
     bool m_Bit16;
     bool m_Bit32;
+    bool m_Bit64;
+    bool m_Bit128;
 #endif
     TCountDownTimerClass<FrameTimerClass> m_C4FuseTimer;
     BStateType m_CurrentState;

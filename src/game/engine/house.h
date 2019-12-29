@@ -247,6 +247,8 @@ public:
     void Set_Defeated(BOOL value) { m_Defeated = value; }
     BOOL Is_Infiltrated() const { return m_Infiltrated; }
     void Set_Infiltrated(BOOL value) { m_Infiltrated = value; }
+    BOOL Is_Repairing() const { return m_Repairing; }
+    void Set_Repairing(BOOL value) { m_Repairing = value; }
     BOOL Is_Map_Clear() const { return m_MapIsClear; }
     void Set_Map_Clear(BOOL value) { m_MapIsClear = value; }
     BOOL Visionary() const { return m_Visionary; }
@@ -290,6 +292,8 @@ public:
     void Set_Preferred_Target(QuarryType target) { m_PreferredTarget = target; }
     BOOL Flag_To_Recalc() { return m_RecalcNeeded = true; }
     int Get_Power() const { return m_Power; }
+    const HouseStaticClass &House_Static() const { return m_Static; }
+    void Set_Repair_Timer(int value) { m_RepairTime = value; }
 
     static void One_Time();
     static void Init();
@@ -320,6 +324,7 @@ public:
     const fixed_t &Get_Airspeed_Multiplier() const { return m_AirspeedMult; }
     const fixed_t &Get_ROF_Multiplier() const { return m_ROFMult; }
     const fixed_t &Get_Cost_Multiplier() const { return m_CostMult; }
+    const fixed_t &Get_Repair_Delay() const { return m_RepairDelay; }
 
 private:
     BOOL Is_Allowed_To_Ally(HousesType house);
