@@ -649,3 +649,11 @@ BaseClass &g_Base = Make_Global<BaseClass>(0x0067F28C);
 // carryover.cpp
 class CarryoverClass;
 CarryoverClass *&g_Carryover = Make_Global<CarryoverClass*>(0x0067F2AC);
+
+// score.cpp
+class ScoreAnimClass;
+GraphicBufferClass *&g_PseudoSeenBuff = Make_Global<GraphicBufferClass *>(0x00687AB0);
+ScoreAnimClass **g_ScoreObjs = Make_Pointer<ScoreAnimClass *>(0x00687BE4);
+BOOL &g_StillUpdating = Make_Global<BOOL>(0x00687BE0);
+PaletteClass &g_ScorePalette = Make_Global<PaletteClass>(0x0066A85C);
+void *&g_Beepy6 = Make_Global<void *>(0x00687BD8);

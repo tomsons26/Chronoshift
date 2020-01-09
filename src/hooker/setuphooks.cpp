@@ -94,6 +94,8 @@
 #include "shapebtn.h"
 #include "sidebar.h"
 #include "slider.h"
+#include "score.h"
+#include "scoreobj.h"
 #include "smudge.h"
 #include "sndctrl.h"
 #include "super.h"
@@ -1125,6 +1127,14 @@ void Setup_Hooks()
     Hook_Function(0x00461FBC, *BulletClass::Bullet_Explodes);
     Hook_Function(0x00462380, *BulletClass::Assign_Target);
     Hook_Function(0x004623B0, *BulletClass::Hook_Overlap_List);
+
+    //Hook_Function(0x00540670, *ScoreClass::Presentation);
+    //Hook_Function(0x00542AB8, *ScoreClass::Do_Graph);
+    Hook_Function(0x0053F0FC, *ScoreTimeClass::Update);
+    Hook_Function(0x0053F25C, *ScoreCredsClass::Update);
+    Hook_Function(0x0053F458, *ScorePrintClass::Update);
+    Hook_Function(0x0053FEA4, *ScoreScaleClass::Update);
+    Hook_Function(0x00540634, *Alloc_Object);
 #endif
 }
 
@@ -1179,6 +1189,12 @@ ASSERT_SIZEOF(OverlayTypeClass, 0x146);
 ASSERT_SIZEOF(PowerClass, 0x103E);
 ASSERT_SIZEOF(RadarClass, 0x100D);
 ASSERT_SIZEOF(RulesClass, 0x200);
+ASSERT_SIZEOF(ScoreClass, 0x39);
+ASSERT_SIZEOF(ScoreAnimClass, 0x19);
+ASSERT_SIZEOF(ScoreCredsClass, 0x2D);
+ASSERT_SIZEOF(ScoreScaleClass, 0x21);
+ASSERT_SIZEOF(ScoreTimeClass, 0x25);
+ASSERT_SIZEOF(ScorePrintClass, 0x25);
 ASSERT_SIZEOF(ScenarioClass, 0x7D7);
 ASSERT_SIZEOF(ScrollClass, 0x1661);
 ASSERT_SIZEOF(ShapeButtonClass, 0x38);

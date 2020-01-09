@@ -295,6 +295,10 @@ public:
     int Get_Power() const { return m_Power; }
     void Inc_Destroyed_Building_Count(HousesType house) { ++m_BuildingsDestroyed[house]; }
     void Inc_Destroyed_Unit_Count(HousesType house) { ++m_UnitsDestroyed[house]; }
+    int Get_Score() { return m_Score; }
+    int Get_Harvested() const { return m_Harvested; }
+    int Get_Stolen() const { return m_Stolen; }
+    HouseStaticClass &Get_House_Static() { return m_Static; }
 
     static void One_Time();
     static void Init();

@@ -136,6 +136,8 @@ set(GAMEENGINE_SRC
     game/engine/rules.cpp
     game/engine/saveload.cpp
     game/engine/scroll.cpp
+    game/engine/score.cpp
+    game/engine/scoreobj.cpp
     game/engine/scenario.cpp
     game/engine/session.cpp
     game/engine/smudge.cpp

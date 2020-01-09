@@ -18,6 +18,14 @@
 #include "session.h"
 #include "globals.h"
 
+void Call_Back_Delay(int a1)
+{
+#ifdef GAME_DLL
+    void (*func)(int) = reinterpret_cast<void (*)(int)>(0x00546340);
+    func(a1);
+#endif
+}
+
 void IPX_Call_Back()
 {
 #ifdef GAME_DLL

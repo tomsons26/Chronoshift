@@ -4,6 +4,7 @@
 #define AUDIO_H
 
 #include "always.h"
+#include "hooker.h"
 
 inline void Sound_Callback()
 {
@@ -89,6 +90,14 @@ inline void Sound_End()
 #ifdef GAME_DLL
     void (*func)() = reinterpret_cast<void (*)()>(0x005BED80);
     func();
+#endif
+}
+
+inline int Play_Sample(void *sample, int priority, int volume, short panloc)
+{
+#ifdef GAME_DLL
+    DEFINE_CALL(func, 0x005BF200, int, void*, int, int, short);
+    return func(sample, priority, volume, panloc);
 #endif
 }
 
