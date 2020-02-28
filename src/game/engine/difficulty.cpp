@@ -3,8 +3,9 @@
  *
  * @author OmniBlade
  * @author CCHyper
+ * @author tomsons26
  *
- * @brief Struct for handling differences between the difficulty levels.
+ * @brief Functions for handling difficulty levels.
  *
  * @copyright Chronoshift is free software: you can redistribute it and/or
  *            modify it under the terms of the GNU General Public License
@@ -14,17 +15,14 @@
  *            LICENSE
  */
 #include "difficulty.h"
-//#include "callback.h"
+#include "callback.h"
 #include "gameini.h"
-#include "controlc.h"
-#include "dialog.h"
-#include "language.h"
+#include "gbuffer.h"
 #include "mouse.h"
-//#include "rules.h"
+#include "rules.h"
 #include "slider.h"
-#include "stringex.h"
+#include "surfacemonitor.h"
 #include "textbtn.h"
-#include "vector.h"
 
 void Difficulty_Get(GameINIClass &ini, DifficultyClass &diff, const char *section)
 {
@@ -45,23 +43,16 @@ void Difficulty_Get(GameINIClass &ini, DifficultyClass &diff, const char *sectio
 }
 int Fetch_Difficulty_Dialog(BOOL one_time_mission)
 {
-    // TODO Requires RuleClass and CallBack
-#if 0
-    DynamicVectorClass<ControlClass *> DialogGadgets(3);
-    char strbuff[512];
-    bool process = true; // loop while true
-    bool to_draw = true;
+    char buffer[512];
 
-    strlcpy(strbuff, Text_String(TXT_SET_DIFFICULTY), sizeof(strbuff));
+    strlcpy(buffer, Text_String(TXT_SET_DIFFICULTY), sizeof(buffer));
 
     // trucante string at "." if arg is true (is this one off mission?)
     if (one_time_mission) {
-        int index = 0;
-
-        if (strbuff[0] != '\0') {
-            for (index = 0; strbuff[index + 1] != '\0'; ++index) {
-                if (strbuff[index] == '.') {
-                    strbuff[index + 1] = '\0';
+        if (buffer[0] != '\0') {
+            for (int i = 0; buffer[i + 1] != '\0'; ++i) {
+                if (buffer[i] == '.') {
+                    buffer[i + 1] = '\0';
                     break;
                 }
             }
@@ -69,49 +60,46 @@ int Fetch_Difficulty_Dialog(BOOL one_time_mission)
     }
 
     // empty call sets the font spacing stuff?
-    Fancy_Text_Print(nullptr, 0, 0, nullptr, COLOR_TBLACK, TPF_6PT_GRAD | TPF_NOSHADOW);
+    Fancy_Text_Print(nullptr, 0, 0, nullptr, COLOR_TBLACK, TPF_6PT_GRAD | TPF_SHADOW);
 
-    int str_w = 0;
-    int str_h = 0;
+    int width = 0;
+    int height = 0;
 
-    Format_Window_String(strbuff, 380, str_w, str_h);
+    Format_Window_String(buffer, 380, width, height);
 
-    TextButtonClass okbtn(
-        1, TXT_OK, TPF_CENTER | TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_NOSHADOW , 470, 244, 60);
-    //TextButtonClass cancelbtn(
-    //    BUTTON_CANCEL, TXT_OK, TPF_CENTER | TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_NOSHADOW , 470, 244, 60);
-    SliderClass diffsli(2, 110, 222, 420, 16, true);
+    TextButtonClass okbtn(BUTTON_OK, TXT_OK, TPF_CENTER | TPF_6PT_GRAD | TPF_NOSHADOW, 470, 244, 60);
 
-    if (g_Rule.FineDiffControl) {
-        diffsli.Set_Maximum(DIFF_COUNT);
-        diffsli.Set_Value((diffsli.Get_Maximum() / 2) - 1); // set initial value.    //2
+    TextButtonClass cancelbtn(BUTTON_CANCEL, TXT_CANCEL, TPF_CENTER | TPF_6PT_GRAD | TPF_NOSHADOW, 110, 244, 60);
+    SliderClass diffsli(3, 110, 222, 420, 16, true);
+
+    if (g_Rule.Fine_Diff_Control()) {
+        diffsli.Set_Maximum(5);
+        diffsli.Set_Value(2);
     } else {
         diffsli.Set_Maximum(3);
-        diffsli.Set_Value((diffsli.Get_Maximum() / 2) - 1); // set initial value.
+        diffsli.Set_Value(1); // set initial value.
     }
-
-    diffsli.Add(okbtn);
-    //diffsli.Add(cancelbtn);
+    GadgetClass *active_gadget = &okbtn;
 
     // Button linking
-    GadgetClass *active_gadget = &diffsli;
+    diffsli.Add(*active_gadget);
+    cancelbtn.Add(*active_gadget);
 
-    // Store all the gadgets in an array.
-    DialogGadgets.Add(&okbtn);
-    //DialogGadgets.Add(&cancelbtn);
-    DialogGadgets.Add(&diffsli);
-
+    bool to_draw = true;
     Set_Logic_Page(&g_SeenBuff);
+
+    int diff = DIFF_NONE;
+    bool process = true;
 
     while (process) {
         if (to_draw) {
+            to_draw = false;
+
             g_Mouse->Hide_Mouse();
 
-            Dialog_Box(200, 200, 500, 160);
+            Dialog_Box(70, 120, 500, 160);
 
-            Fancy_Text_Print(
-                strbuff, 110, 150, GadgetClass::Get_Color_Scheme(), COLOR_TBLACK, TPF_6PT_GRAD | TPF_NOSHADOW | TPF_LEFT);
-
+            Fancy_Text_Print(buffer, 110, 150, GadgetClass::Get_Color_Scheme(), COLOR_TBLACK, TPF_6PT_GRAD | TPF_SHADOW);
             Fancy_Text_Print(TXT_HARD,
                 diffsli.Get_Width() + diffsli.Get_XPos(),
                 diffsli.Get_YPos() - 18,
@@ -129,7 +117,44 @@ int Fetch_Difficulty_Dialog(BOOL one_time_mission)
                 diffsli.Get_YPos() - 18,
                 GadgetClass::Get_Color_Scheme(),
                 COLOR_TBLACK,
-                TPF_6PT_GRAD | TPF_SHADOW | TPF_LEFT);
+                TPF_6PT_GRAD | TPF_SHADOW);
+
+            if (diffsli.Get_Value() == 0) {
+                Fancy_Text_Print("An easy computer controlled opponent.",
+                    110,
+                    185,
+                    GadgetClass::Get_Color_Scheme(),
+                    COLOR_TBLACK,
+                    TPF_6PT_GRAD | TPF_SHADOW);
+            }
+
+            if (diffsli.Get_Value() == 1) {
+                Fancy_Text_Print("An average computer controlled opponent.",
+                    110,
+                    185,
+                    GadgetClass::Get_Color_Scheme(),
+                    COLOR_TBLACK,
+                    TPF_6PT_GRAD | TPF_SHADOW);
+            }
+
+            if (diffsli.Get_Value() == 2) {
+                Fancy_Text_Print("An difficult computer controlled opponent.",
+                    110,
+                    185,
+                    GadgetClass::Get_Color_Scheme(),
+                    COLOR_TBLACK,
+                    TPF_6PT_GRAD | TPF_SHADOW);
+            }
+
+            if (diffsli.Get_Value() > 2) {
+                Fancy_Text_Print("Diff out of range! Got %d",
+                    120,
+                    140,
+                    GadgetClass::Get_Color_Scheme(),
+                    COLOR_TBLACK,
+                    TPF_6PT_GRAD | TPF_SHADOW,
+                    diffsli.Get_Value());
+            }
 
             if (active_gadget != nullptr) {
                 active_gadget->Draw_All(true);
@@ -138,27 +163,37 @@ int Fetch_Difficulty_Dialog(BOOL one_time_mission)
             g_Mouse->Show_Mouse();
         }
 
-        Application_Callback();
+        Call_Back();
 
-        if (AllSurfaces.field_0) {
-            AllSurfaces.field_0 = false;
+        if (g_AllSurfaces.Surfaces_Restored()) {
+            g_AllSurfaces.Clear_Surfaces_Restored();
             to_draw = true;
         } else {
-            KeyNumType input = diffsli.Input();
+            KeyNumType input = active_gadget->Input();
 
-            if (input == KN_RETURN || input == 0x80001) {
-                process = false;
+            if (input != KN_NONE) {
+                switch (input) {
+                    case KN_RETURN:
+                    case GADGET_INPUT_RENAME2(BUTTON_OK):
+                        diff = ((g_Rule.Fine_Diff_Control() == false) + 1) * diffsli.Get_Value();
+                        process = false;
+                        break;
+
+                    case KN_ESC:
+                    case GADGET_INPUT_RENAME2(BUTTON_CANCEL):
+                        process = false;
+                        break;
+
+                    case GADGET_INPUT_RENAME2(3): // for updating text when slider is moved
+                        to_draw = true;
+                        break;
+
+                    default:
+                        break;
+                }
             }
-
-            //if (input == KN_ESC || input == GADGET_INPUT_RENAME(BUTTON_CANCEL)) {
-            //    process = false;
-            //    return DIFF_NONE;
-            //}
-        } 
+        }
     }
 
-    return (g_Rule.FineDiffControl == false) + 1) * diffsli.Get_Value();
-#else
-    return DIFF_EASIEST;
-#endif
+    return diff;
 }

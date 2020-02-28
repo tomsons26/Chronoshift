@@ -3,8 +3,9 @@
  *
  * @author OmniBlade
  * @author CCHyper
+ * @author tomsons26
  *
- * @brief Struct for handling differences between the difficulty levels.
+ * @brief Functions for handling difficulty levels.
  *
  * @copyright Chronoshift is free software: you can redistribute it and/or
  *            modify it under the terms of the GNU General Public License
