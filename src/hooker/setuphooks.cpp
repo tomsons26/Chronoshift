@@ -110,6 +110,7 @@
 #include "unittype.h"
 #include "version.h"
 #include "vessel.h"
+#include "visctrldlg.h"
 #include "vesseltype.h"
 #include "vortex.h"
 #include "wsa.h"
@@ -1135,6 +1136,8 @@ void Setup_Hooks()
     Hook_Function(0x00461FBC, *BulletClass::Bullet_Explodes);
     Hook_Function(0x00462380, *BulletClass::Assign_Target);
     Hook_Function(0x004623B0, *BulletClass::Hook_Overlap_List);
+
+    Hook_Function(0x0058D5F0, *VisualControlsClass::Process);
 #endif
 }
 

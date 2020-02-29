@@ -167,6 +167,7 @@ set(GAMEENGINE_SRC
     game/engine/unitdata.cpp
     game/engine/unittype.cpp
     game/engine/utracker.cpp
+    game/engine/visctrldlg.cpp
     game/engine/version.cpp
     game/engine/vessel.cpp
     game/engine/vesseldata.cpp
