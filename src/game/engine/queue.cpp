@@ -3,6 +3,7 @@
  *
  * @author CCHyper
  * @author OmniBlade
+ * @author tomsons26
  *
  * @brief Message queue related functions.
  *
@@ -14,15 +15,17 @@
  *            LICENSE
  */
 #include "queue.h"
+#include "eventhandler.h"
 #include "gameevent.h"
-#include "target.h"
 #include "globals.h"
 #include "house.h"
+#include "mouse.h"
 #include "session.h"
+#include "target.h"
 
 #ifndef GAME_DLL
-TEventQueueClass<GameEventClass, OUTGOING_SIZE> g_OutgoingEvents;
-TEventQueueClass<GameEventClass, SCHEDULED_SIZE> g_ScheduledEvents;
+TQueueClass<GameEventClass, OUTGOING_SIZE> g_OutgoingEvents; //was OutList
+TQueueClass<GameEventClass, SCHEDULED_SIZE> g_ScheduledEvents; //was DoList
 #endif
 
 BOOL Queue_Options()
@@ -45,17 +48,17 @@ void Queue_Record()
 #else
     int event_index = 0;
     for (int index = 0; index < g_ScheduledEvents.Get_Count(); ++index) {
-        GameEventClass ev = g_ScheduledEvents[index];
-        if (ev.Get_Event_Frame() == g_GameFrame && !ev.Is_Executed()) {
+        GameEventClass &ev = g_ScheduledEvents.Fetch_From_Head(index);
+        if (g_GameFrame == ev.Get_Event_Frame() && !ev.Is_Executed()) {
             ++event_index;
         }
     }
-    //g_Session.RecordFile.Write(&event_index, sizeof(event_index));
+    g_Session.Recording_File().Write(&event_index, sizeof(event_index));
 
     for (int index = 0; index < g_ScheduledEvents.Get_Count(); ++index) {
-        GameEventClass ev = g_ScheduledEvents.Fetch_From_Tail(index);
-        if (ev.Get_Event_Frame() == g_GameFrame && !ev.Is_Executed()) {
-            //g_Session.RecordFile.Write(&ev, sizeof(ev));
+        GameEventClass &ev = g_ScheduledEvents.Fetch_From_Head(index);
+        if (g_GameFrame == ev.Get_Event_Frame() && !ev.Is_Executed()) {
+            g_Session.Recording_File().Write(&ev, sizeof(GameEventClass));
             --event_index;
         }
     }
@@ -68,7 +71,76 @@ void Queue_Playback()
     void (*func)() = reinterpret_cast<void (*)()>(0x0052BDEC);
     return func();
 #else
-    // TODO
+    static int _mx, _my;
+
+    GameEventClass event;
+    if (g_Keyboard->Check() && g_Keyboard->Get() == KN_ESC || g_Session.Attraction_Allowed()) {
+        captainslog_debug("Queue_Playback() - Interupted by escape press");
+        g_GameActive = 0;
+        return;
+    } else if (g_Session.Attraction_Allowed() && g_GameFrame > 0
+        && (_mx != g_Mouse->Get_Mouse_X() || _my != g_Mouse->Get_Mouse_Y())) {
+        captainslog_debug("Queue_Playback() - Interupted by mouse move");
+        g_GameActive = 0;
+    } else {
+        _mx = g_Mouse->Get_Mouse_X();
+        _my = g_Mouse->Get_Mouse_Y();
+        Compute_Game_CRC();
+        ////////g_CRC[g_GameFrame & 0x1F] = g_GameCRC;
+
+        if (g_GameFrame >= g_Session.Trap_Print_CRC()) {
+            Print_CRCs(0);
+            captainslog_debug("Queue_Playback() - Reached CRC print frame");
+            Emergency_Exit(0);
+        }
+
+        if (g_GameFrame || g_Session.Game_To_Play() == GAME_CAMPAIGN) {
+            int sendrate = g_Session.Frame_Send_Rate();
+            int rate = sendrate * ((g_GameFrame + sendrate - 1) / sendrate);
+
+            if (g_Session.Game_To_Play() == GAME_CAMPAIGN || g_Session.Game_To_Play() == GAME_SKIRMISH
+                || g_Session.Packet_Protocol() != COMPROTO_TWO || g_GameFrame == rate) {
+                size_t numevents = 0;
+                bool read = true;
+
+                if (g_Session.Recording_File().Read(&numevents, sizeof(numevents)) != sizeof(numevents)) {
+                    captainslog_debug("Queue_Playback() - Reading event count failed");
+                    read = false;
+                } else {
+                    for (int i = 0; i < numevents; ++i) {
+                        if (g_Session.Recording_File().Read(&event, sizeof(GameEventClass)) != sizeof(GameEventClass)) {
+                            captainslog_debug("Queue_Playback() - Reading events failed");
+                            read = false;
+                            break;
+                        }
+                        event.Set_Executed(false); // i think...
+                        g_ScheduledEvents.Add(event);
+                    }
+                }
+
+                if (read == false) {
+                    g_GameActive = 0;
+                } else {
+                    int players = 0;
+                    HousesType house;
+                    if (g_Session.Game_To_Play() == GAME_CAMPAIGN) {
+                        players = 1;
+                        house = g_PlayerPtr->What_Type();
+                    } else {
+                        players = g_Session.MPlayer_Max();
+                        house = HOUSES_MULTI_FIRST;
+                    }
+
+                    if (Execute_Scheduled_Events(players, house)) {
+                        Clean_Scheduled_Events();
+                    } else {
+                        captainslog_debug("Queue_Playback() - Execute_ScheduledEvents() failed");
+                        g_GameActive = false;
+                    }
+                }
+            }
+        }
+    }
 #endif
 }
 
@@ -84,7 +156,7 @@ void Queue_AI()
                 break;
             case 1:
             case 2:
-            case 3:
+            case GAME_IPX:
             case GAME_INTERNET:
             case 6:
             case 7:
@@ -102,19 +174,21 @@ void Queue_AI_Normal()
     void (*func)() = reinterpret_cast<void (*)()>(0x00528F20);
     return func();
 #else
-    while (g_ScheduledEvents.Get_Count() > 0) {
-        GameEventClass ev = g_ScheduledEvents.Fetch_Head();
+    while (g_OutgoingEvents.Get_Count() > 0) {
+        GameEventClass &ev = g_OutgoingEvents.Fetch_Head();
+        ev.Set_Executed(false); // i think.....
+        g_ScheduledEvents.Add(ev);
+        g_OutgoingEvents.Remove_Head();
     }
-    /*if (g_Session.Record_Game()) {
-        bool executed = Execute_ScheduledEvents(1, g_PlayerPtr->What_Type());
-        //captainslog_debug_CONDITIONAL(!executed, "Execute_ScheduledEvents() returned false in Queue_AI_Normal()!\n");
-        if (executed) {
-            Clean_ScheduledEvents();
-        } else {
-            captainslog_debug("Queue_AI_Normal() - Execute_ScheduledEvents() failed, setting g_GameActive to false");
-            g_GameActive = false;
-        }
-    }*/
+    if (g_Session.Record_Game()) {
+        Queue_Record();
+    }
+    if (Execute_Scheduled_Events(1, g_PlayerPtr->What_Type())) {
+        Clean_Scheduled_Events();
+    } else {
+        captainslog_debug("Queue_AI_Normal() - Execute_ScheduledEvents() failed");
+        g_GameActive = false;
+    }
 #endif
 }
 
@@ -140,36 +214,70 @@ BOOL Queue_Mission(TargetClass whom, MissionType mission, target_t target, targe
     return g_OutgoingEvents.Add(ev);
 }
 
-BOOL Queue_Mission_Formation(TargetClass whom, MissionType mission, target_t target, target_t dest, SpeedType form_speed, MPHType form_max_speed)
+BOOL Queue_Mission_Formation(
+    TargetClass whom, MissionType mission, target_t target, target_t dest, SpeedType form_speed, MPHType form_max_speed)
 {
     GameEventClass ev(whom, mission, target, dest, form_speed, form_max_speed);
     return g_OutgoingEvents.Add(ev);
 }
 
-BOOL Execute_ScheduledEvents(int house_count, HousesType houses, ConnectionManagerClass *conn_mgr, TCountDownTimerClass<FrameTimerClass> *a4, signed int *a5, unsigned short *a6, unsigned short *a7)
+BOOL Execute_Scheduled_Events(int house_count, HousesType houses, ConnectionManagerClass *conn_mgr,
+    TCountDownTimerClass<FrameTimerClass> *a4, signed int *a5, unsigned short *a6, unsigned short *a7)
 {
 #ifdef GAME_DLL
-    BOOL (*func)(int, HousesType, ConnectionManagerClass *, TCountDownTimerClass<FrameTimerClass> *, signed int *, unsigned short *, unsigned short *) = reinterpret_cast<BOOL (*)(int, HousesType, ConnectionManagerClass *, TCountDownTimerClass<FrameTimerClass> *, signed int *, unsigned short *, unsigned short *)>(0x0052B69C);
+    BOOL(*func)
+    (int,
+        HousesType,
+        ConnectionManagerClass *,
+        TCountDownTimerClass<FrameTimerClass> *,
+        signed int *,
+        unsigned short *,
+        unsigned short *) = reinterpret_cast<BOOL (*)(int,
+        HousesType,
+        ConnectionManagerClass *,
+        TCountDownTimerClass<FrameTimerClass> *,
+        signed int *,
+        unsigned short *,
+        unsigned short *)>(0x0052B69C);
     return func(house_count, houses, conn_mgr, a4, a5, a6, a7);
 #else
     return false;
 #endif
 }
 
-void Clean_ScheduledEvents(ConnectionManagerClass *conn_mgr)
+void Clean_Scheduled_Events(ConnectionManagerClass *conn_mgr)
 {
 #ifdef GAME_DLL
     void (*func)(ConnectionManagerClass *) = reinterpret_cast<void (*)(ConnectionManagerClass *)>(0x0052BC94);
     return func(conn_mgr);
 #else
     while (g_ScheduledEvents.Get_Count() > 0) {
-        GameEventClass ev = g_ScheduledEvents.Fetch_Tail();
-        if (!ev.Is_Executed()) {
-            if (ev.Get_Event_Frame() >= g_GameFrame) {
-                break;
-            }
+        g_Keyboard->Check();
+        if ( conn_mgr != nullptr ) {
+            //Update_Queue_Mono(conn_mgr, 7);
         }
-        g_ScheduledEvents.Remove_Tail();
+
+        GameEventClass &ev = g_ScheduledEvents.Fetch_Head();
+        if (!ev.Is_Executed() && ev.Get_Event_Frame() >= g_GameFrame) {
+            break;
+        }
+        g_ScheduledEvents.Remove_Head();
     }
+#endif
+}
+
+void Compute_Game_CRC()
+{
+#ifdef GAME_DLL
+    void (*func)() = reinterpret_cast<void (*)()>(0x0052C044);
+    func();
+#endif
+}
+
+void Print_CRCs(GameEventClass *event)
+{
+#ifdef GAME_DLL
+    void (*func)(GameEventClass *) = reinterpret_cast<void (*)(GameEventClass *)>(0x0052C2B8);
+    func(event);
 #endif
 }

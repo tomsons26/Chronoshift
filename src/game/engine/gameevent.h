@@ -71,7 +71,6 @@ public:
     // Default constructor.
     GameEventClass();
     GameEventClass(const GameEventClass &that);
-    ~GameEventClass() {}
 
     GameEventClass &operator=(const GameEventClass &that);
 
@@ -109,7 +108,7 @@ public:
     int Get_House_ID() const { return m_HouseID; }
     void Set_House_ID(int id) { m_HouseID = id; }
     BOOL Is_Executed() const { return m_IsExecuted; }
-    void Set_Executed() { m_IsExecuted = true; }
+    void Set_Executed(bool state) { m_IsExecuted = state; }
 
     const char *Name() const { return Name_From(m_Type); }
 

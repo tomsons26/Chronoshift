@@ -468,10 +468,10 @@ void *&PowerClass::s_PowerBarShape = Make_Global<void *>(0x006877BC);
 // queue.cpp
 #include "gameevent.h"
 #include "queue.h"
-TEventQueueClass<GameEventClass, OUTGOING_SIZE> &g_OutgoingEvents =
-    Make_Global<TEventQueueClass<GameEventClass, OUTGOING_SIZE> >(0x0066AB5C);
-TEventQueueClass<GameEventClass, SCHEDULED_SIZE> &g_ScheduledEvents =
-    Make_Global<TEventQueueClass<GameEventClass, SCHEDULED_SIZE> >(0x0066B068);
+TQueueClass<GameEventClass, OUTGOING_SIZE> &g_OutgoingEvents =
+    Make_Global<TQueueClass<GameEventClass, OUTGOING_SIZE> >(0x0066AB5C);
+TQueueClass<GameEventClass, SCHEDULED_SIZE> &g_ScheduledEvents =
+    Make_Global<TQueueClass<GameEventClass, SCHEDULED_SIZE> >(0x0066B068);
 
 // radar.cpp
 RadarClass::RTacticalClass &RadarClass::s_RadarButton = Make_Global<RadarClass::RTacticalClass>(0x006878E4);

@@ -3,6 +3,7 @@
  *
  * @author CCHyper
  * @author OmniBlade
+ * @author tomsons26
  *
  * @brief Message queue related functions.
  *
@@ -23,6 +24,10 @@
 #include "mission.h"
 #include <captainslog.h>
 
+// todo debug code, so far only has a time when event created
+// timing code had to do with Check_Mirror
+//#define QUEUE_DEBUG
+
 class TargetClass;
 class GameEventClass;
 class ConnectionManagerClass;
@@ -39,94 +44,60 @@ enum EventQueueSize
 };
 
 template<class EVENT, int SIZE>
-class TEventQueueClass
+class TQueueClass
 {
 public:
-    TEventQueueClass(void) : Count(0), Head(0), Tail(0), List() {}
-    ~TEventQueueClass(void) {}
+    TQueueClass() : m_List() { Clear(); }
+    ~TQueueClass() {}
 
-    EVENT &operator[](unsigned int index)
-    {
-        captainslog_assert(index < SIZE);
-        return List[index % SIZE];
-    }
+    EVENT &Fetch_Head() { return m_List[m_Head]; }
 
-    const EVENT &operator[](unsigned int index) const
-    {
-        captainslog_assert(index < SIZE);
-        return List[index % SIZE];
-    }
+    EVENT &Fetch_From_Head(int index) { return m_List[(index + m_Head) % SIZE]; }
 
-    TEventQueueClass(const TEventQueueClass &that) :
-        Count(that.Count), Head(that.Head), Tail(that.Tail)
-    {
-        memcpy(List, that.List, sizeof(List));
-    }
-
-    TEventQueueClass &operator=(const TEventQueueClass &that)
-    {
-        if (this != &that) {
-            Count = that.Count;
-            Head = that.Head;
-            Tail = that.Tail;
-            memcpy(List, that.List, sizeof(List));
-        }
-        return *this;
-    }
-
-    EVENT &Fetch_Head() { return List[Head]; }
-    EVENT &Fetch_Tail() { return List[Tail]; }
-
-    EVENT &Fetch_From_Head(int index) { return List[(index + Head) % SIZE]; }
-    EVENT &Fetch_From_Tail(int index) { return List[(index + Tail) % SIZE]; }
-
-    unsigned int Get_Count() const { return Count; }
+    unsigned int Get_Count() const { return m_Count; }
     unsigned int Get_Capacity() const { return SIZE; }
 
-    void Clear() { Count = 0; Head = 0; Tail = 0; memset(List, 0, sizeof(List)); }
+    void Clear() { m_Count = 0; m_Head = 0; m_Tail = 0; }
 
     bool Add(EVENT &element)
     {
-        if (Count >= SIZE) {
-            captainslog_debug("TEventQueueClass::Add() - Failed! (Count:%d, Capacity:%d, Tail:%d, Head:%d).", Count, SIZE, Tail, Head);
+        if (m_Count >= SIZE) {
+            captainslog_debug("TQueueClass::Add() - Failed! (Count:%d, Size:%d, Tail:%d, Head:%d).", m_Count, SIZE, m_Tail, m_Head);
             return false;
         }
 
-        captainslog_debug("TEventQueueClass::Add() - Adding event '%s' to queue.", element.Name());
+        captainslog_debug("TQueueClass::Add() - Adding event '%s' to queue.", element.Name());
 
-        List[Tail] = element;
-        Tail = (Tail + 1) % SIZE;
+        m_List[m_Tail] = element;
 
-        ++Count;
+#ifdef QUEUE_DEBUG
+        m_Time[m_Tail] = timeGetTime();
+#endif
+        m_Tail = (m_Tail + 1) % SIZE;
+
+        ++m_Count;
 
         return true;
     }
 
     unsigned int Remove_Head()
     {
-        if (Count > 0) {
-            Head = (Head + 1) % SIZE;
-            --Count;
+        if (m_Count > 0) {
+            m_Head = (m_Head + 1) % SIZE;
+            --m_Count;
         }
 
-        return Count;
-    }
-
-    unsigned int Remove_Tail()
-    {
-        if (Count > 0) {
-            Tail = (Tail + 1) % SIZE;
-            --Count;
-        }
-
-        return Count;
+        return m_Count;
     }
 
 private:
-    unsigned int Count; // The number of items in the queue.
-    unsigned int Head; // Index to the head (start) of the queue.
-    unsigned int Tail; // Index to the tail (end) of the queue.
-    EVENT List[SIZE];
+    unsigned int m_Count; // The number of items in the queue.
+    unsigned int m_Head; // Index to the head (start) of the queue.
+    unsigned int m_Tail; // Index to the tail (end) of the queue.
+    EVENT m_List[SIZE];
+#ifdef QUEUE_DEBUG
+    unsigned int m_Time[SIZE]; // Time in milliseconds when the event was added.
+#endif
 };
 
 BOOL Queue_Options();
@@ -167,8 +138,8 @@ int Add_Compressed_Events(char *, int, int, int, int);
 int Breakup_Receive_Packet(void *, int);
 int Extract_Uncompressed_Events(void *, int);
 int Extract_Compressed_Events(void *, int);
-BOOL Execute_ScheduledEvents(int house_count, HousesType houses, ConnectionManagerClass *conn_mgr = nullptr, TCountDownTimerClass<FrameTimerClass> *a4 = nullptr, signed int *a5 = nullptr, unsigned short *a6 = nullptr, unsigned short *a7 = nullptr);
-void Clean_ScheduledEvents(ConnectionManagerClass *conn_mgr = nullptr);
+BOOL Execute_Scheduled_Events(int house_count, HousesType houses, ConnectionManagerClass *conn_mgr = nullptr, TCountDownTimerClass<FrameTimerClass> *a4 = nullptr, signed int *a5 = nullptr, unsigned short *a6 = nullptr, unsigned short *a7 = nullptr);
+void Clean_Scheduled_Events(ConnectionManagerClass *conn_mgr = nullptr);
 
 void Stop_Game();
 
@@ -183,15 +154,16 @@ void Dump_Packet_Too_Late_Stuff(GameEventClass *, ConnectionManagerClass *conn_m
 
 void Check_Mirror();
 
-extern uint32_t GameCRC;
-extern uint32_t CRC[32];
+extern uint32_t g_GameCRC;
+extern uint32_t g_CRC[32];
 
 #ifdef GAME_DLL
-extern TEventQueueClass<GameEventClass, OUTGOING_SIZE> &g_OutgoingEvents;
-extern TEventQueueClass<GameEventClass, SCHEDULED_SIZE> &g_ScheduledEvents;
+extern TQueueClass<GameEventClass, OUTGOING_SIZE> &g_OutgoingEvents;
+extern TQueueClass<GameEventClass, SCHEDULED_SIZE> &g_ScheduledEvents;
 #else
-extern TEventQueueClass<GameEventClass, OUTGOING_SIZE> g_OutgoingEvents;
-extern TEventQueueClass<GameEventClass, SCHEDULED_SIZE> g_ScheduledEvents;
+
+extern TQueueClass<GameEventClass, OUTGOING_SIZE> g_OutgoingEvents;
+extern TQueueClass<GameEventClass, SCHEDULED_SIZE> g_ScheduledEvents;
 #endif
 
 #endif // QUEUE_H
