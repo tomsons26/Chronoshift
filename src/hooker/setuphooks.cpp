@@ -114,6 +114,7 @@
 #include "vortex.h"
 #include "wsa.h"
 #include "xordelta.h"
+#include "gamectrl.h"
 #include <malloc.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -1135,6 +1136,9 @@ void Setup_Hooks()
     Hook_Function(0x00461FBC, *BulletClass::Bullet_Explodes);
     Hook_Function(0x00462380, *BulletClass::Assign_Target);
     Hook_Function(0x004623B0, *BulletClass::Hook_Overlap_List);
+
+
+    Hook_Function(0x004C42D0, *GameControlsClass::Process);
 #endif
 }
 

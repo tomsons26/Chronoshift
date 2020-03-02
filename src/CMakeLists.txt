@@ -83,6 +83,7 @@ set(GAMEENGINE_SRC
     game/engine/focus.cpp
     game/engine/foot.cpp
     game/engine/fuse.cpp
+    game/engine/gamectrl.cpp
     game/engine/gameevent.cpp
     game/engine/gameini.cpp
     game/engine/gamekeyboard.cpp
