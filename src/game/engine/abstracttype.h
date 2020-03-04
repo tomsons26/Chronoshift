@@ -47,6 +47,7 @@ public:
     int Get_Heap_ID() const { return m_HeapID; }
     RTTIType const What_Am_I() const { return m_RTTI; }
     const char *Get_Name() const { return m_Name; }
+    const char *Full_Name_String() const;
 
 protected:
     RTTIType m_RTTI;

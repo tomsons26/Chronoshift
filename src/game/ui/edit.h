@@ -56,6 +56,10 @@ public:
 
     EditClass &operator=(EditClass &that);
 
+    void Set_Color_Scheme(RemapControlType *remap) { m_ColorScheme = remap; }
+
+    void Ignore_Input(bool state) { m_IgnoreInput = true; }
+
 protected:
     TextPrintType m_TextStyle;
     EditStyleType m_EditStyle;

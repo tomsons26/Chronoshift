@@ -62,6 +62,7 @@ enum ScenarioVarEnum
 
 class ScenarioClass
 {
+    friend int Skirmish_Dialog(int);
 public:
     ScenarioClass();
 
@@ -87,6 +88,7 @@ public:
     void Stop_Global_Timer() { return m_GlobalTimer.Stop(); }
     TCountDownTimerClass<FrameTimerClass> &Some_Timer() { return m_SomeTimer; }
     int Get_Scenario_Index() const { return m_ScenarioIndex; }
+    void Set_Scenario_Index(int index) { m_ScenarioIndex = index; }
     TheaterType Get_Theater() const { return m_Theater; }
     void Set_Theater(TheaterType theater) { m_Theater = theater; }
     const char *Scenario_Name() const { return m_ScenarioName; }

@@ -39,6 +39,7 @@ public:
     void Set_Toggle_Disabled(BOOL disabled) { m_ToggleDisabled = disabled; }
 
     bool Get_Toggle_State() { return m_ToggleState; }
+    void Set_Toggle_State(bool state) { m_ToggleState = state; Flag_To_Redraw(); }
 
 protected:
 #ifndef CHRONOSHIFT_NO_BITFIELDS

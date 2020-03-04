@@ -141,6 +141,7 @@ set(GAMEENGINE_SRC
     game/engine/smudgetype.cpp
     game/engine/sndctrl.cpp
     game/engine/source.cpp
+    game/engine/skirmdlg.cpp
     game/engine/sidebar.cpp
     game/engine/special.cpp
     game/engine/super.cpp

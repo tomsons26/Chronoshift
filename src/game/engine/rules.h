@@ -259,6 +259,8 @@ public:
     int Quake_Delay() const { return m_QuakeDelay; }
     const fixed_t &Cloak_Delay() const { return m_CloakDelay; }
 
+    void Set_MCV_Undeploy(bool state) { m_MCVUndeploy = state; }
+
 private:
     fixed_t m_TurboBoost;
     fixed_t m_AttackInterval;

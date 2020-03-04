@@ -119,6 +119,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern int Skirmish_Dialog2(int);
+
 void Setup_Hooks()
 {
 #ifdef __WATCOMC__
@@ -1135,6 +1137,8 @@ void Setup_Hooks()
     Hook_Function(0x00461FBC, *BulletClass::Bullet_Explodes);
     Hook_Function(0x00462380, *BulletClass::Assign_Target);
     Hook_Function(0x004623B0, *BulletClass::Hook_Overlap_List);
+
+    Hook_Call(0x00503C54, *Skirmish_Dialog2);
 #endif
 }
 
@@ -1190,6 +1194,7 @@ ASSERT_SIZEOF(PowerClass, 0x103E);
 ASSERT_SIZEOF(RadarClass, 0x100D);
 ASSERT_SIZEOF(RulesClass, 0x200);
 ASSERT_SIZEOF(ScenarioClass, 0x7D7);
+ASSERT_SIZEOF(SessionClass, 0x127C);
 ASSERT_SIZEOF(ScrollClass, 0x1661);
 ASSERT_SIZEOF(ShapeButtonClass, 0x38);
 ASSERT_SIZEOF(SidebarClass, 0x15FA);

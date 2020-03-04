@@ -53,6 +53,8 @@ public:
     void Expand();
     void Collapse();
 
+    bool Is_Expanded() { return m_IsExpanded; }
+
 protected:
 #ifndef CHRONOSHIFT_NO_BITFIELDS
     BOOL m_IsExpanded : 1; // & 1

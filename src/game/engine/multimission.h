@@ -30,7 +30,7 @@ public:
     void Set_Digest(const char *digest);
     void Set_Official(int official);
     void Set_Expansion(int expansion);
-private:
+public:
     char m_Description[44];
     char m_Filename[512];
     char m_Digest[32];

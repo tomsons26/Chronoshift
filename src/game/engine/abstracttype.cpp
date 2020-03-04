@@ -41,3 +41,8 @@ int AbstractTypeClass::Full_Name() const
 
     return m_UIName;
 }
+
+const char *AbstractTypeClass::Full_Name_String() const
+{
+    return Text_String(Full_Name());
+}

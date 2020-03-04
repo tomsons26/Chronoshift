@@ -39,12 +39,14 @@ public:
         m_ShowHealth = false;
     }
 
+    bool Shroud_Regrows() { return m_ShroudRegrows; }
+    void Set_Shroud_Regrows(bool state) { m_ShroudRegrows = state; }
     BOOL Allow_Remixes() const { return m_Remixes; }
     BOOL Is_Spawned() const { return m_Spawned; }
     BOOL Is_First_Run() const { return m_FirstRun; }
     void Set_First_Run(BOOL first_run) { m_FirstRun = first_run; }
     BOOL Always_Show_Health() { return m_ShowHealth; }
-
+    
     uint32_t Pack() const { return m_SpecialFlags; }
 
 private:
