@@ -16,15 +16,17 @@
 #include "buildingtype.h"
 #include "aircrafttype.h"
 #include "coord.h"
+#include "gamefile.h"
 #include "globals.h"
+#include "iomap.h"
 #include "lists.h"
 #include "rules.h"
 #include "special.h"
+#include "foot.h"
 #include "unittype.h"
-#include "gamefile.h"
-#include "iomap.h"
 #include <algorithm>
 #include <captainslog.h>
+
 
 #ifndef GAME_DLL
 TFixedIHeapClass<BuildingTypeClass> g_BuildingTypes;
@@ -36,10 +38,10 @@ void *BuildingTypeClass::g_LightningShapes = nullptr;
  * 0x00429CEC
  */
 BuildingTypeClass::BuildingTypeClass(BuildingType type, int uiname, const char *name, FacingType facing, coord_t exit_coord,
-    RemapType altremap, int primaryf, int primaryl, int primaryh, BOOL fake, BOOL normalized, BOOL nominal, BOOL wall, BOOL simple_damage,
-    BOOL radar_invisible, BOOL selectable, BOOL legal_target, BOOL insignificant, BOOL theater, BOOL turret, BOOL remapable,
-    RTTIType factory, DirType start_dir, BSizeType size, const int16_t *exit_list, const int16_t *occupy_list,
-    const int16_t *overlap_list) :
+    RemapType altremap, int primaryf, int primaryl, int primaryh, BOOL fake, BOOL normalized, BOOL nominal, BOOL wall,
+    BOOL simple_damage, BOOL radar_invisible, BOOL selectable, BOOL legal_target, BOOL insignificant, BOOL theater,
+    BOOL turret, BOOL remapable, RTTIType factory, DirType start_dir, BSizeType size, const int16_t *exit_list,
+    const int16_t *occupy_list, const int16_t *overlap_list) :
     TechnoTypeClass(RTTI_BUILDINGTYPE, type, uiname, name, altremap, primaryf, primaryl, primaryh, primaryl, primaryh,
         nominal, radar_invisible, selectable, legal_target, insignificant, 0, theater, turret, remapable, 1,
         turret ? FACING_COUNT_32 : FACING_COUNT_1, SPEED_NONE),
@@ -66,7 +68,7 @@ BuildingTypeClass::BuildingTypeClass(BuildingType type, int uiname, const char *
     m_OccupyList(occupy_list),
     m_OverlapList(overlap_list),
     m_BuildupData(nullptr)
-{ 
+{
     for (BStateType i = BSTATE_FIRST; i < BSTATE_COUNT; ++i) {
         m_Anims[i].m_Start = 0;
         m_Anims[i].m_FrameCount = 1;
@@ -235,7 +237,7 @@ ObjectClass *BuildingTypeClass::Create_One_Of(HouseClass *house) const
 const int16_t *BuildingTypeClass::Occupy_List(BOOL recalc) const
 {
     static const int16_t _templap[] = { LIST_END };
-    static int16_t _occupy[32] = {0};
+    static int16_t _occupy[32] = { 0 };
 
     SmudgeType bib_smudge = SMUDGE_NONE;
     cell_t bibcell = 0;
@@ -294,23 +296,19 @@ const int16_t *BuildingTypeClass::Overlap_List() const
  */
 int BuildingTypeClass::Raw_Cost() const
 {
-#ifdef GAME_DLL
-    int (*func)(const BuildingTypeClass *) = reinterpret_cast<int (*)(const BuildingTypeClass *)>(0x00453C70);
-    return func(this);
-#elif 0
     int cost = TechnoTypeClass::Raw_Cost();
 
     switch (m_Type) {
-        case BUILDING_PROC:
-            cost -= UnitTypeClass::As_Reference(UNIT_HARVESTER).Get_Cost();
+        case BUILDING_HELIPAD:
+            if (!g_Rule.Separate_Aircraft()) {
+                cost -= (AircraftTypeClass::As_Reference(AIRCRAFT_HIND).Get_Cost()
+                            + AircraftTypeClass::As_Reference(AIRCRAFT_HIND).Get_Cost())
+                    / 2;
+            }
             break;
 
-        case BUILDING_HELIPAD:
-            if (g_Rule.Separate_Aircraft()) {
-                cost -= (AircraftTypeClass::As_Reference(AIRCRAFT_HIND).Get_Cost()
-                        + AircraftTypeClass::As_Reference(AIRCRAFT_HIND).Get_Cost()) / 2;
-            }
-
+        case BUILDING_PROC:
+            cost -= UnitTypeClass::As_Reference(UNIT_HARVESTER).Get_Cost();
             break;
 
         default:
@@ -318,9 +316,6 @@ int BuildingTypeClass::Raw_Cost() const
     };
 
     return cost;
-#else 
-    return 0;
-#endif
 }
 
 /**
@@ -331,7 +326,7 @@ int BuildingTypeClass::Raw_Cost() const
 BOOL BuildingTypeClass::Read_INI(GameINIClass &ini)
 {
 #ifdef GAME_DLL
-    BOOL (*func)
+    BOOL(*func)
     (const BuildingTypeClass *, GameINIClass &) =
         reinterpret_cast<BOOL (*)(const BuildingTypeClass *, GameINIClass &)>(0x00453E48);
     return func(this, ini);
@@ -444,10 +439,10 @@ void BuildingTypeClass::Init(TheaterType theater)
 }
 
 /**
-* Initialises animation frame info.
-*
-* Inlined
-*/
+ * Initialises animation frame info.
+ *
+ * Inlined
+ */
 void BuildingTypeClass::Init_Anim(BStateType bstate, int start_frame, int frame_count, int delay)
 {
     m_Anims[bstate].m_Start = start_frame;
@@ -457,12 +452,13 @@ void BuildingTypeClass::Init_Anim(BStateType bstate, int start_frame, int frame_
 
 void BuildingTypeClass::One_Time()
 {
-    struct BAnimStruct {
+    struct BAnimStruct
+    {
         BuildingType m_Building;
         BStateType m_State;
         int m_StartFrame;
         int m_FrameCount;
-        int m_Delay;			// TODO: Needs confirming what this actually is, could be Rate or Speed?
+        int m_Delay; // TODO: Needs confirming what this actually is, could be Rate or Speed?
     };
 
     static BAnimStruct _anims[] = {
@@ -472,9 +468,9 @@ void BuildingTypeClass::One_Time()
         { BUILDING_PDOX, BSTATE_2, 4, 16, 3 },
 
         // missile silo
-        { BUILDING_MSLO, BSTATE_1, 0, 0, 0 },	//idle?
-        { BUILDING_MSLO, BSTATE_2, 0, 5, 2 },	//attacking?
-        { BUILDING_MSLO, BSTATE_4, 4, 1, 0 },	//closing?
+        { BUILDING_MSLO, BSTATE_1, 0, 0, 0 }, // idle?
+        { BUILDING_MSLO, BSTATE_2, 0, 5, 2 }, // attacking?
+        { BUILDING_MSLO, BSTATE_4, 4, 1, 0 }, // closing?
         { BUILDING_MSLO, BSTATE_5, 5, 3, 2 },
 
         // camouflaged pill box
@@ -505,28 +501,28 @@ void BuildingTypeClass::One_Time()
         { BUILDING_FACF, BSTATE_2, 0, 26, 3 },
 
         // helipad
-        { BUILDING_HELIPAD, BSTATE_2, 0, 7, 4 }, //Active?
-        { BUILDING_HELIPAD, BSTATE_1, 0, 0, 0 }, //Idle?
+        { BUILDING_HELIPAD, BSTATE_2, 0, 7, 4 }, // Active?
+        { BUILDING_HELIPAD, BSTATE_1, 0, 0, 0 }, // Idle?
 
         // civillian hosptial
-        { BUILDING_HOSPITAL, BSTATE_1, 0, 4, 3 }, //Idle?
+        { BUILDING_HOSPITAL, BSTATE_1, 0, 4, 3 }, // Idle?
 
-        // 
-        { BUILDING_V19, BSTATE_1, 0, 14, 4 }, //Idle?
+        //
+        { BUILDING_V19, BSTATE_1, 0, 14, 4 }, // Idle?
 
         // service depot
-        { BUILDING_FIX, BSTATE_2, 0, 7, 2 }, //Active?
-        { BUILDING_FIX, BSTATE_1, 0, 1, 0 }, //Idle?
+        { BUILDING_FIX, BSTATE_2, 0, 7, 2 }, // Active?
+        { BUILDING_FIX, BSTATE_1, 0, 1, 0 }, // Idle?
 
-        // 
-        { BUILDING_V20, BSTATE_1, 0, 3, 3 }, //Idle?
-        { BUILDING_V21, BSTATE_1, 0, 3, 3 }, //Idle?
-        { BUILDING_V22, BSTATE_1, 0, 3, 3 }, //Idle?
-        { BUILDING_V23, BSTATE_1, 0, 3, 3 }, //Idle?
+        //
+        { BUILDING_V20, BSTATE_1, 0, 3, 3 }, // Idle?
+        { BUILDING_V21, BSTATE_1, 0, 3, 3 }, // Idle?
+        { BUILDING_V22, BSTATE_1, 0, 3, 3 }, // Idle?
+        { BUILDING_V23, BSTATE_1, 0, 3, 3 }, // Idle?
 
         // weapons factory
-        { BUILDING_WEAP, BSTATE_2, 0, 1, 0 }, //Active?
-        { BUILDING_WEAP, BSTATE_1, 0, 1, 0 }, //Idle?
+        { BUILDING_WEAP, BSTATE_2, 0, 1, 0 }, // Active?
+        { BUILDING_WEAP, BSTATE_1, 0, 1, 0 }, // Idle?
 
         // fake weapons factory
         { BUILDING_WEAF, BSTATE_2, 0, 1, 0 },
@@ -636,7 +632,7 @@ void BuildingTypeClass::Init_Heap()
 }
 
 /**
- * @brief 
+ * @brief
  *
  * @address 0x00460554 (beta)
  */
@@ -650,4 +646,37 @@ void BuildingTypeClass::Prep_For_Add()
             }
         }
     }
+}
+
+/**
+ * @brief
+ *
+ * @address 0x00453D24
+ */
+BOOL BuildingTypeClass::Flush_For_Placement(cell_t cellnum, HouseClass *house)
+{
+    if (cellnum <= 0) {
+        return false;
+    }
+
+    bool retval = false;
+
+    const int16_t *list = Occupy_List(true);
+
+    while (list[0] != LIST_END) {
+        cell_t offset_cellnum = list[0] + cellnum;
+        ++list;
+        if (g_Map.In_Radar(offset_cellnum)) {
+            CellClass &cell = g_Map[offset_cellnum];
+            FootClass *fptr = reinterpret_cast<FootClass*>(cell.Cell_Techno());
+
+            if (fptr != nullptr) {
+                retval = true;
+                if (fptr->Get_Owner_House()->Is_Ally(house) && fptr->Is_Foot() && Target_Legal(fptr->Nav_Com()) == false) {
+                    cell.Incoming(0, true);
+                }
+            }
+        }
+    }
+    return retval;
 }

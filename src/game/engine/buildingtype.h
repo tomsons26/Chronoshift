@@ -217,6 +217,7 @@ public:
     int Width() const;
     int Height(BOOL check_bib = false) const;
     BOOL Bib_And_Offset(SmudgeType &smudge, int16_t &cellnum) const;
+    BOOL Flush_For_Placement(cell_t cellnum, HouseClass *house);
 
     void Code_Pointers() {}
     void Decode_Pointers() {}
@@ -234,6 +235,9 @@ public:
     int Power_Output() const { return m_Power; }
     int Power_Drain() const { return m_Drain; }
     int Storage_Capacity() const { return m_Storage; }
+    FacingType Deploy_Facing() const { return m_Facing; }
+    const int16_t *Exit_List() const { return m_ExitList; }
+    BSizeType Building_Size() const { return m_BuildingSize; }
 
     static void One_Time();
     static BuildingTypeClass &As_Reference(BuildingType type);

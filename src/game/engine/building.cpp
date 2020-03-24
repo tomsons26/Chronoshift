@@ -20,60 +20,72 @@
 #include "globals.h"
 #include "house.h"
 #include "iomap.h"
+#include "overlay.h"
+#include "overlaytype.h"
 #include "queue.h"
 #include "rules.h"
+#include "session.h"
+#include "smudge.h"
 #include <algorithm>
 
 #ifndef GAME_DLL
 TFixedIHeapClass<BuildingClass> g_Buildings;
 #endif
 
-BuildingClass::BuildingClass(BuildingType type, HousesType house) :
-    TechnoClass(RTTI_BUILDING, g_Buildings.ID(this), house)
+BuildingClass::BuildingClass(BuildingType type, HousesType house) : TechnoClass(RTTI_BUILDING, g_Buildings.ID(this), house)
 {
 }
 
-BuildingClass::BuildingClass(const BuildingClass &that) :
-    TechnoClass(that)
-{
-}
+BuildingClass::BuildingClass(const BuildingClass &that) : TechnoClass(that) {}
 
-BuildingClass::BuildingClass(const NoInitClass &noinit) :
-    TechnoClass(noinit)
-{
-}
+BuildingClass::BuildingClass(const NoInitClass &noinit) : TechnoClass(noinit) {}
 
-BuildingClass::~BuildingClass()
-{}
+BuildingClass::~BuildingClass() {}
 
 coord_t BuildingClass::Center_Coord() const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0045A87C, coord_t, const BuildingClass *);
-    return func(this);
-#else
-    return 0;
-#endif
+    const coord_t CenterOffset[] = {
+        0x00800080, 0x008000FF, 0x00FF0080, 0x00FF00FF, 0x018000FF, 0x00FF0180, 0x01800180, 0x00FF0200, 0x02800280
+    };
+
+    return Coord_Add(m_Coord, CenterOffset[Class_Of().Building_Size()]);
 }
 
+/**
+ *
+ *
+ */
 coord_t BuildingClass::Target_Coord() const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0045F224, coord_t, const BuildingClass *);
-    return func(this);
-#else
-    return 0;
-#endif
+    coord_t coord = Center_Coord();
+
+    if (Class_Of().Deploy_Facing() != FACING_NONE) {
+        return Coord_Get_Adjacent(coord, Class_Of().Deploy_Facing());
+    }
+
+    return coord;
 }
 
 MoveType BuildingClass::Can_Enter_Cell(cell_t cellnum, FacingType facing) const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0045B95C, MoveType, const BuildingClass *, cell_t, FacingType);
-    return func(this, cellnum, facing);
-#else
-    return MOVE_NONE;
-#endif
+    if (What_Type() == BUILDING_FACT && m_IsDown) {
+        if (g_Map[cellnum].Is_Clear_To_Build(Class_Of().Get_Speed())) {
+            return MOVE_OK;
+        }
+
+        return MOVE_NO;
+    }
+
+    if (!g_InMapEditor && g_ScenarioInit == 0 && g_Session.Game_To_Play() == GAME_CAMPAIGN
+        && Get_Owner_House()->Player_Has_Control() && !g_Map[cellnum].Is_Visible()) {
+        return MOVE_NO;
+    }
+
+    if (Class_Of().Legal_Placement(cellnum)) {
+        return MOVE_OK;
+    }
+
+    return MOVE_NO;
 }
 
 void BuildingClass::AI()
@@ -96,7 +108,6 @@ void *BuildingClass::Get_Image_Data() const
     }
     return TechnoClass::Get_Image_Data();
 }
-
 
 ActionType BuildingClass::What_Action(ObjectClass *object) const
 {
@@ -189,7 +200,6 @@ coord_t BuildingClass::Sort_Y() const
 
         default:
             break;
-            
     }
 
     return Coord_Add(Center_Coord(), Coord_From_Lepton_XY(0, (Class_Of().Height() * 256) / 3));
@@ -229,12 +239,96 @@ BOOL BuildingClass::Limbo()
 
 BOOL BuildingClass::Unlimbo(coord_t coord, DirType dir)
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00456838, BOOL, BuildingClass *, coord_t, DirType);
-    return func(this, coord, dir);
-#else
-    return 0;
-#endif
+    HouseClass *owner = Get_Owner_House();
+
+    if (Class_Of().Is_Wall()) {
+        if (Can_Enter_Cell(Get_Cell()) != MOVE_OK) {
+            return false;
+        }
+
+        OverlayType overlay = OVERLAY_NONE;
+        switch (What_Type()) {
+            case BUILDING_SBAG:
+                overlay = OVERLAY_SANDBAG;
+                break;
+            case BUILDING_CYCL:
+                overlay = OVERLAY_CYCLONE_FENCE;
+                break;
+            case BUILDING_BRIK:
+                overlay = OVERLAY_BRICK_WALL;
+                break;
+            case BUILDING_BARB:
+                overlay = OVERLAY_BARB_WIRE;
+                break;
+            case BUILDING_WOOD:
+                overlay = OVERLAY_WOOD_FENCE;
+                break;
+            case BUILDING_FENC:
+                overlay = OVERLAY_FENCE;
+                break;
+            default:
+                overlay = OVERLAY_NONE;
+                break;
+        }
+
+        if (overlay != OVERLAY_NONE) {
+            OverlayTypeClass *otptr = &OverlayTypeClass::As_Reference(overlay);
+            OverlayClass *optr = (OverlayClass *)otptr->Create_One_Of(owner);
+            if (optr != nullptr && optr->Unlimbo(coord)) {
+                g_Map[Coord_To_Cell(coord)].Set_Owner(owner->What_Type());
+
+                Transmit_Message(RADIO_OVER_AND_OUT);
+
+                g_Map.Sight_From(Coord_To_Cell(coord), Class_Of().Get_Sight(), owner, false);
+
+                delete this;
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+    if (!TechnoClass::Unlimbo(coord, dir)) {
+        return false;
+    }
+
+    /*
+    v24 = &CCPtr<HouseClass>::operator->(&v32->t.OwnerHouse)->BScan.field_0;
+    v12 = CCPtr<BuildingTypeClass>::operator->(&v32->Class);
+    *v24 |= 1 << v12->Type;
+    v23 = &CCPtr<HouseClass>::operator->(&v32->t.OwnerHouse)->BScan.field_4;
+    v13 = CCPtr<BuildingTypeClass>::operator->(&v32->Class);
+    *v23 |= 1 << v13->Type;
+    */
+
+    owner->Recalc_Center();
+    owner->Active_Add(this);
+    owner->Flag_To_Recalc();
+
+    m_field_EA = 0;
+
+    if (!m_PlayerAware && g_Map[Coord_To_Cell(coord)].Is_Revealed() || g_Session.Game_To_Play() != GAME_CAMPAIGN) {
+        Revealed(g_PlayerPtr);
+    }
+
+    if (!owner->Is_Human()) {
+        Revealed(owner);
+    }
+    if (m_PlayerOwned) {
+        g_Map.Flag_Power_To_Redraw();
+        g_Map.Flag_To_Redraw();
+    }
+    /*
+    if ((CCPtr<BuildingTypeClass>::operator->(&v32->Class)->tt.Owner & 0x300) != 768) {
+        if (CCPtr<BuildingTypeClass>::operator->(&v32->Class)->tt.Owner & 0x100) {
+            m_field_D5 = HOUSES_GREECE;
+        } else {
+            m_field_D5 = HOUSES_USSR;
+        }
+    }
+    */
+    return true;
 }
 
 /**
@@ -339,12 +433,92 @@ void BuildingClass::Draw_It(int x, int y, WindowNumberType window) const
 
 BOOL BuildingClass::Mark(MarkType mark)
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00455B94, BOOL, BuildingClass *, MarkType);
-    return func(this, mark);
-#else
-    return 0;
-#endif
+    SmudgeType smudge = SMUDGE_NONE;
+
+    if (!TechnoClass::Mark(mark)) {
+        return false;
+    }
+
+    cell_t cellnum = Get_Cell();
+
+    switch (mark) {
+        case MARK_REMOVE: {
+            g_Map.Pick_Up(cellnum, this);
+
+            if (Class_Of().Bib_And_Offset(smudge, cellnum)) {
+                SmudgeClass *sptr = new SmudgeClass(smudge);
+
+                if (sptr != nullptr) {
+                    sptr->Disown(cellnum);
+                    delete sptr;
+                }
+            }
+            break;
+        }
+
+        case MARK_PUT: {
+            if (Class_Of().Is_Wall()) {
+                switch (What_Type()) {
+                    case BUILDING_SBAG:
+                        new OverlayClass(OVERLAY_SANDBAG, cellnum, Get_Owner_House()->What_Type());
+                        break;
+
+                    case BUILDING_CYCL:
+                        new OverlayClass(OVERLAY_CYCLONE_FENCE, cellnum, Get_Owner_House()->What_Type());
+                        break;
+
+                    case BUILDING_BRIK:
+                        new OverlayClass(OVERLAY_BRICK_WALL, cellnum, Get_Owner_House()->What_Type());
+                        break;
+
+                    case BUILDING_BARB:
+                        new OverlayClass(OVERLAY_BARB_WIRE, cellnum, Get_Owner_House()->What_Type());
+                        break;
+
+                    case BUILDING_WOOD:
+                        new OverlayClass(OVERLAY_WOOD_FENCE, cellnum, Get_Owner_House()->What_Type());
+                        break;
+
+                    case BUILDING_FENC:
+                        new OverlayClass(OVERLAY_FENCE, cellnum, Get_Owner_House()->What_Type());
+                        break;
+
+                    default:
+                        break;
+                }
+
+                Transmit_Message(RADIO_OVER_AND_OUT);
+                // walls are placed as overlays, so the building is deleted
+                delete this;
+
+            } else {
+                if (Can_Enter_Cell(cellnum) != MOVE_OK) {
+                    return false;
+                }
+
+                cell_t smudge_cell = cellnum;
+
+                if (Class_Of().Bib_And_Offset(smudge, smudge_cell)) {
+                    new SmudgeClass(smudge,
+                        Cell_To_Coord(smudge_cell),
+                        Class_Of().Base_Normal() ? Get_Owner_House()->What_Type() : HOUSES_NONE);
+                }
+
+                g_Map.Place_Down(cellnum, this);
+            }
+            break;
+        }
+
+        case MARK_REDRAW:
+            g_Map.Refresh_Cells(cellnum, Overlap_List(true));
+            break;
+
+        default:
+            g_Map.Refresh_Cells(cellnum, Overlap_List());
+            g_Map.Refresh_Cells(cellnum, Occupy_List());
+            break;
+    }
+    return true;
 }
 
 /**
@@ -413,7 +587,7 @@ DamageResultType BuildingClass::Take_Damage(int &damage, int a2, WarheadType war
  */
 void BuildingClass::Fire_Out()
 {
-    //empty
+    // empty
 }
 
 /**
@@ -495,7 +669,7 @@ void BuildingClass::Repair(int mode)
 
             m_IsRepairing = true;
             break;
-    
+
         default:
             break;
     }
@@ -531,7 +705,7 @@ void BuildingClass::Sell_Back(int mode)
 {
     if (Class_Of().Get_Buildup_Data()) {
         bool to_deconstruct = false;
-    
+
         switch (mode) {
             case -1:
                 to_deconstruct = m_Mission != MISSION_DECONSTRUCTION;
@@ -648,12 +822,23 @@ int BuildingClass::Mission_Missile()
 
 int BuildingClass::How_Many_Survivors() const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00460608, int, const BuildingClass *);
-    return func(this);
-#else
-    return 0;
-#endif
+    if (m_Bit128 || !Class_Of().Is_Crewed()) {
+        return 0;
+    }
+
+    int cost = InfantryTypeClass::As_Reference(INFANTRY_E1).Raw_Cost();
+
+    if (cost == 0) {
+        return 0;
+    }
+
+    if (m_IsCaptured) {
+        cost *= 2;
+    }
+
+    int calc = Class_Of().Raw_Cost() * g_Rule.Survivor_Rate();
+
+    return std::clamp(calc / cost, 1, 5);
 }
 
 /**
@@ -669,14 +854,75 @@ DirType BuildingClass::Turret_Facing() const
     return Direction_To_Target(m_TarCom);
 }
 
+/**
+ *
+ *
+ */
 cell_t BuildingClass::Find_Exit_Cell(TechnoClass *object) const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0045E7C0, cell_t, const BuildingClass *, TechnoClass *);
-    return func(this, object);
-#else
+    cell_t cell = Get_Cell();
+
+    const int16_t *list = Class_Of().Exit_List();
+    if (list != nullptr) {
+        while (list[0] != 32767) {
+            cell_t offset_cell = list[0] + cell;
+            ++list;
+
+            if (g_Map.In_Radar(offset_cell) && object->Can_Enter_Cell(offset_cell) == MOVE_OK) {
+                return offset_cell;
+            }
+        }
+    } else {
+        int width = Class_Of().Width();
+        int height = Class_Of().Height(0);
+
+        cell_t exit_cell;
+
+        int j = -1;
+        int i = -1;
+
+        // TODO clean up fors, don't have good pseudo for the loop currently
+
+        for (;; ++i) {
+            if (i > width) {
+                break;
+            }
+
+            exit_cell = (j << 7) + i + cell;
+
+            if (g_Map.In_Radar(exit_cell) && object->Can_Enter_Cell(exit_cell) == MOVE_OK) {
+                return exit_cell;
+            }
+
+            exit_cell = (height << 7) + i + cell;
+
+            if (g_Map.In_Radar(exit_cell) && object->Can_Enter_Cell(exit_cell) == MOVE_OK) {
+                return exit_cell;
+            }
+        }
+
+        i = -1;
+        j = -1;
+        for (;; ++j) {
+            if (j > height) {
+                break;
+            }
+
+            exit_cell = i + cell + (j << 7);
+
+            if (g_Map.In_Radar(exit_cell) && object->Can_Enter_Cell(exit_cell) == MOVE_OK) {
+                return exit_cell;
+            }
+
+            exit_cell = width + cell + (j << 7);
+
+            if (g_Map.In_Radar(exit_cell) && object->Can_Enter_Cell(exit_cell) == MOVE_OK) {
+                return exit_cell;
+            }
+        }
+    }
+
     return 0;
-#endif
 }
 
 /**
@@ -785,12 +1031,76 @@ void BuildingClass::Grand_Opening(int a1)
 #endif
 }
 
+/**
+ *
+ *
+ */
 void BuildingClass::Update_Buildables()
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x00459590, void, BuildingClass *);
-    func(this);
-#endif
+    if (m_OwnerHouse == g_PlayerPtr && !m_InLimbo && m_PlayerAware) {
+        TechnoTypeClass *ttptr;
+
+        switch (Class_Of().Factory_Type()) {
+            case RTTI_VESSELTYPE:
+                for (VesselType v = VESSEL_FIRST; v < VESSEL_COUNT; ++v) {
+                    ttptr = &VesselTypeClass::As_Reference(v);
+
+                    if (g_PlayerPtr->Can_Build(ttptr, m_field_D5)) {
+                        g_Map.Add(RTTI_VESSELTYPE, v);
+                    }
+                }
+                break;
+
+            case RTTI_BUILDINGTYPE:
+                for (BuildingType b = BUILDING_FIRST; b < BUILDING_COUNT; ++b) {
+                    ttptr = &BuildingTypeClass::As_Reference(b);
+
+                    if (g_PlayerPtr->Can_Build(ttptr, m_field_D5)) {
+                        g_Map.Add(RTTI_BUILDINGTYPE, b);
+                    }
+                }
+                break;
+
+            case RTTI_UNITTYPE:
+                for (UnitType u = UNIT_FIRST; u < UNIT_COUNT; ++u) {
+                    ttptr = &UnitTypeClass::As_Reference(u);
+
+                    if (g_PlayerPtr->Can_Build(ttptr, m_field_D5)) {
+                        g_Map.Add(RTTI_UNITTYPE, u);
+                    }
+                }
+                break;
+
+            case RTTI_INFANTRYTYPE:
+                for (InfantryType i = INFANTRY_FIRST; i < INFANTRY_COUNT; ++i) {
+                    ttptr = &InfantryTypeClass::As_Reference(i);
+
+                    if (g_PlayerPtr->Can_Build(ttptr, m_field_D5)) {
+                        if (reinterpret_cast<InfantryTypeClass *>(ttptr)->Is_Canine()) {
+                            if (What_Type() == BUILDING_KENN) {
+                                g_Map.Add(RTTI_INFANTRYTYPE, i);
+                            }
+                        } else if (What_Type() != BUILDING_KENN) {
+                            g_Map.Add(RTTI_INFANTRYTYPE, i);
+                        }
+                    }
+                }
+                break;
+
+            case RTTI_AIRCRAFTTYPE:
+                for (AircraftType a = AIRCRAFT_FIRST; a < AIRCRAFT_COUNT; ++a) {
+                    ttptr = &AircraftTypeClass::As_Reference(a);
+
+                    if (g_PlayerPtr->Can_Build(ttptr, m_field_D5)) {
+                        g_Map.Add(RTTI_AIRCRAFTTYPE, a);
+                    }
+                }
+                break;
+
+            default:
+                return;
+        }
+    }
 }
 
 uint8_t *BuildingClass::Remap_Table() const
@@ -864,12 +1174,35 @@ int BuildingClass::Flush_For_Placement(TechnoClass *techno, cell_t cellnum) cons
 
 cell_t BuildingClass::Check_Point(CheckPointType check) const
 {
-#ifdef GAME_DLL
-    DEFINE_CALL(func, 0x0045EB90, cell_t, const BuildingClass *, CheckPointType);
-    return func(this, check);
-#else
-    return 0;
-#endif
+    int x = 6;
+    int y = 5;
+
+    cell_t cellnum = Center_Cell();
+
+    switch (check) {
+        case CHECKPOINT_0:
+            x = 0;
+            break;
+
+        case CHECKPOINT_1:
+            break;
+
+        case CHECKPOINT_2:
+            y = 0;
+            break;
+        default:
+            break;
+    }
+
+    if (Cell_Get_X(cellnum) - g_Map.Get_Map_Cell_X() > g_Map.Get_Map_Cell_Width() / 2) {
+        x = -x;
+    }
+
+    if ((signed int)(Cell_Get_Y(cellnum) - g_Map.Get_Map_Cell_Y()) > g_Map.Get_Map_Cell_Height() / 2) {
+        y = -y;
+    }
+
+    return Cell_From_XY(x + Cell_Get_X(cellnum), y + Cell_Get_Y(cellnum));
 }
 
 void BuildingClass::Update_Radar_Spied()
