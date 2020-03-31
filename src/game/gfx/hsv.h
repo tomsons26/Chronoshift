@@ -33,8 +33,12 @@ public:
     bool operator==(HSVClass const &that) const { return m_Hue == that.m_Hue && m_Sat == that.m_Sat && m_Val == that.m_Val; }
     bool operator!=(HSVClass const &that) const { return this != &that; }
     HSVClass &operator=(HSVClass const &that);
-
-    void Reset() { m_Hue = 0; m_Sat = 0; m_Val = 0; }
+    void Reset()
+    {
+        m_Hue = 0;
+        m_Sat = 0;
+        m_Val = 0;
+    }
     void Adjust(int adjust, HSVClass const &that);
     void Adjust(fixed_t brightness, fixed_t saturation, fixed_t tint, fixed_t contrast);
     int const Difference(HSVClass const &that) const;

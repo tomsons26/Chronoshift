@@ -156,9 +156,9 @@ int Write_PCX_File(FileClass &file, GraphicBufferClass &gbuff, PaletteClass &pal
     captainslog_debug("Write_PCX_File() preparing to write image palette.");
     for (int i = 0; i < 256; ++i) {
         captainslog_debug("\tpreparing entry %d of %d", i, 256);
-        tmppal[i].Set_Red(pal[i].Get_Red() << 2);
-        tmppal[i].Set_Green(pal[i].Get_Green() << 2);
-        tmppal[i].Set_Blue(pal[i].Get_Blue() << 2);
+        //tmppal[i].Set_Red(pal[i].Get_Red() << 2);
+        //tmppal[i].Set_Green(pal[i].Get_Green() << 2);
+        //tmppal[i].Set_Blue(pal[i].Get_Blue() << 2);
     }
 
     // Write the tmppal palette to the file.

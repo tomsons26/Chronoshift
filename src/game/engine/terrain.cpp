@@ -352,11 +352,13 @@ uint8_t *const TerrainClass::Radar_Icon(short cellnum) const
 
     cell_t cell = Coord_To_Cell(m_Coord);
 
-    uint8_t x = Cell_Get_X(cell) - Cell_Get_X(cellnum);
-    uint8_t y = Cell_Get_Y(cell) - Cell_Get_Y(cellnum);
+    uint8_t x = Cell_Get_X(cellnum) - Cell_Get_X(cell);
+    uint8_t y = Cell_Get_Y(cellnum) - Cell_Get_Y(cell);
+
     // see OverlayTypeClass::Radar_Icon for explaination whats going on
     if (x < icon->X && y < icon->Y) {
-        return icondata + 9 * (icon->X + x * y);
+        return &icondata[9 * (x + icon->X * y)];
     }
+
     return nullptr;
 }

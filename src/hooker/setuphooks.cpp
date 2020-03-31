@@ -115,6 +115,7 @@
 #include "vortex.h"
 #include "wsa.h"
 #include "xordelta.h"
+#include "palette.h"
 #include <malloc.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -218,11 +219,15 @@ void Setup_Hooks()
     Hook_Function(0x005D4338, Linear_Scale_To_Linear);
 
     // fading.h
-    Hook_Function(0x004FB914, Make_Fading_Table);
-    Hook_Function(0x005CC4C0, Build_Fading_Table);
-    Hook_Function(0x004FB994, Conquer_Build_Fading_Table);
-    Hook_Function(0x004FB7C4, Build_Translucent_Table);
-    Hook_Function(0x004FB870, Conquer_Build_Translucent_Table);
+    //Hook_Function(0x004FB914, Make_Fading_Table);
+    //Hook_Function(0x005CC4C0, Build_Fading_Table);
+    //Hook_Function(0x004FB994, Conquer_Build_Fading_Table);
+    //Hook_Function(0x004FB7C4, Build_Translucent_Table);
+    //Hook_Function(0x004FB870, Conquer_Build_Translucent_Table);
+
+    //Hook_Function(0x005BCEF0, &PaletteClass::Closest_Color);
+    Hook_Function(0x005C51C8, &RGBClass::Difference);
+    //Hook_Function(0x005C514C, *RGBClass::Adjust);
 
     // gadget.h
     Hook_Function(0x004C3E40, *GadgetClass::Remove);
@@ -443,7 +448,7 @@ void Setup_Hooks()
     // display.h
     Hook_Function(0x004AEF7C, *DisplayClass::Init_Clear);
     Hook_Function(0x004AEFF4, *DisplayClass::Init_IO);
-    Hook_Function(0x004AF02C, *DisplayClass::Init_Theater);
+    //Hook_Function(0x004AF02C, *DisplayClass::Init_Theater);
     Hook_Function(0x004B0140, *DisplayClass::AI);
     Hook_Function(0x004AEEF4, *DisplayClass::One_Time);
     Hook_Function(0x004AF700, *DisplayClass::Set_Cursor_Shape);
@@ -525,7 +530,7 @@ void Setup_Hooks()
     Hook_Function(0x0054DDE0, *SidebarClass::StripClass::Get_Special_Cameo); // seems to work
     Hook_Function(0x0054DE00, *SidebarClass::StripClass::Init_Clear); // seems to work
     Hook_Function(0x0054DE54, *SidebarClass::StripClass::Init_IO); // works
-    Hook_Function(0x0054E008, *SidebarClass::StripClass::Init_Theater); // works
+    //Hook_Function(0x0054E008, *SidebarClass::StripClass::Init_Theater); // works
     Hook_Function(0x0054E0C4, *SidebarClass::StripClass::Activate); // seems to work
     Hook_Function(0x0054E184, *SidebarClass::StripClass::Deactivate); // seems to work
     Hook_Function(0x0054E1F8, *SidebarClass::StripClass::Add); // seems to work
@@ -535,7 +540,7 @@ void Setup_Hooks()
     Hook_Function(0x0054D07C, *SidebarClass::One_Time); // seems to work
     Hook_Function(0x0054D0F8, *SidebarClass::Init_Clear); // works
     Hook_Function(0x0054D144, *SidebarClass::Init_IO); // works
-    Hook_Function(0x0054D304, *SidebarClass::Init_Theater); // works
+    //Hook_Function(0x0054D304, *SidebarClass::Init_Theater); // works
     Hook_Function(0x0054D724, *SidebarClass::Draw_It); // Powerbar needed shows even when power structure not in play.
     Hook_Function(0x0054D404, *SidebarClass::Refresh_Cells); // works
     Hook_Function(0x0054D3B0, *SidebarClass::Which_Column); // works

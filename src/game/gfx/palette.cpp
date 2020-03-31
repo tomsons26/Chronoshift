@@ -34,9 +34,7 @@ PaletteClass &PaletteClass::CurrentPalette = *reinterpret_cast<PaletteClass *>(g
 PaletteClass::PaletteClass(const RGBClass &rgb)
 {
     for (int index = 0; index < ARRAY_SIZE(PaletteClass::m_Palette); ++index) {
-        m_Palette[index].Set_Red(rgb.Get_Red());
-        m_Palette[index].Set_Green(rgb.Get_Green());
-        m_Palette[index].Set_Blue(rgb.Get_Blue());
+        m_Palette[index] = rgb;
     }
 }
 

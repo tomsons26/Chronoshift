@@ -27,14 +27,9 @@ HSVClass const HSVClass::s_whiteColor(0, 0, 100);
  */
 void HSVClass::Adjust(int adjust, HSVClass const &that)
 {
-    int tmp;
-
-    tmp = adjust * (that.m_Val - m_Val);
-    m_Val += (tmp - (tmp >> 31 << 8)) >> 8;
-    tmp = adjust * (that.m_Sat - m_Sat);
-    m_Sat += (tmp - (tmp >> 31 << 8)) >> 8;
-    tmp = adjust * (that.m_Hue - m_Hue);
-    m_Hue += (tmp - (tmp >> 31 << 8)) >> 8;
+    m_Val += adjust * (that.m_Val - m_Val) / 256;
+    m_Sat += adjust * (that.m_Sat - m_Sat) / 256;
+    m_Hue += adjust * (that.m_Hue - m_Hue) / 256;
 }
 
 /**
@@ -42,11 +37,12 @@ void HSVClass::Adjust(int adjust, HSVClass const &that)
  */
 void HSVClass::Adjust(fixed_t brightness, fixed_t saturation, fixed_t tint, fixed_t contrast)
 {
-    //int v10 = std::clamp(((brightness * 256) * m_val) / 128, 0, 255);
-    //int tmp = ((std::clamp(((brightness * 256) * m_val) / 128, 0, 255) - 128) * (contrast * 256));
-    //int v12 = (tmp / 128) + 128;
+    // int v10 = std::clamp(((brightness * 256) * m_val) / 128, 0, 255);
+    // int tmp = ((std::clamp(((brightness * 256) * m_val) / 128, 0, 255) - 128) * (contrast * 256));
+    // int v12 = (tmp / 128) + 128;
 
-    int v = std::clamp((((std::clamp(((brightness * 256) * m_Val) / 128, 0, 255) - 128) * (contrast * 256)) / 128) + 128, 0, 255);
+    int v = std::clamp(
+        (((std::clamp(((brightness * 256) * m_Val) / 128, 0, 255) - 128) * (contrast * 256)) / 128) + 128, 0, 255);
     int s = std::clamp(((saturation * 256) * m_Sat) / 128, 0, 255);
     int h = std::clamp(((tint * 256) * m_Hue) / 128, 0, 255);
 
@@ -62,15 +58,11 @@ void HSVClass::Adjust(fixed_t brightness, fixed_t saturation, fixed_t tint, fixe
  */
 int const HSVClass::Difference(HSVClass const &that) const
 {
-    int hue = m_Hue - that.m_Hue;
-    int saturation = m_Sat - that.m_Sat;
-    int value = m_Val - that.m_Val;
+    int hue = std::abs(m_Hue - that.m_Hue);
+    int sat = std::abs(m_Sat - that.m_Sat);
+    int val = std::abs(m_Val - that.m_Val);
 
-    hue = std::abs(hue);
-    saturation = std::abs(saturation);
-    value = std::abs(value);
-
-    return hue * hue + saturation * saturation + value * value;
+    return hue * hue + sat * sat + val * val;
 }
 
 /**
@@ -81,52 +73,34 @@ int const HSVClass::Difference(HSVClass const &that) const
 HSVClass::operator RGBClass() const
 {
     if (m_Sat == 0) {
-        // Achromatic (grey)
-        return RGBClass(RGBClass::Contract_VGA(m_Val), RGBClass::Contract_VGA(m_Val), RGBClass::Contract_VGA(m_Val));
+        // Achromatic (grey).
+        return RGBClass(m_Val, m_Val, m_Val);
     }
 
-    int saturation = m_Sat;
-    int value = m_Val;
-    int hue = m_Hue * 6; // scale to full range.
+    int sat = m_Sat;
+    int val = m_Val;
+    int hue = m_Hue * 6; // Scale to full range.
     int q = (hue / 255);
-    int tmp[7];
+    int rem = hue % 255;
 
-    tmp[1] = value;
-    tmp[2] = value;
-    tmp[3] = value * (255 - hue % 255 * saturation / 255) / 255;
-    tmp[4] = value * (255 - saturation) / 255;
-    tmp[5] = tmp[4];
-    tmp[6] = (255 - saturation * (255 - hue % 255) / 255) * value / 255;
+    int values[7];
+    values[1] = val;
+    values[2] = val;
+    values[3] = val * (255 - rem * sat / 255) / 255;
+    values[4] = val * (255 - sat) / 255;
+    values[5] = values[4];
+    values[6] = (255 - sat * (255 - rem) / 255) * val / 255;
 
-    int red;
-    int green;
-    int blue;
+    q += (q > 4 ? -4 : 2);
+    int red = values[q];
 
-    if (q > 4) {
-        q = q - 4;
-    } else {
-        q = q + 2;
-    }
+    q += (q > 4 ? -4 : 2);
+    int blue = values[q];
 
-    red = tmp[q];
+    q += (q > 4 ? -4 : 2);
+    int green = values[q];
 
-    if (q > 4) {
-        q = q - 4;
-    } else {
-        q = q + 2;
-    }
-
-    blue = tmp[q];
-
-    if (q > 4) {
-        q = q - 4;
-    } else {
-        q = q + 2;
-    }
-
-    green = tmp[q];
-
-    return RGBClass(RGBClass::Contract_VGA(red), RGBClass::Contract_VGA(green), RGBClass::Contract_VGA(blue));
+    return RGBClass(red, green, blue);
 }
 
 /**
@@ -136,8 +110,6 @@ HSVClass::operator RGBClass() const
  */
 void const HSVClass::Set(uint8_t index) const
 {
-    RGBClass rgb;
-
-    rgb = *this; // should call operator RGBClass;
+    RGBClass rgb = *this; // should call operator RGBClass;
     rgb.Set(index);
 }

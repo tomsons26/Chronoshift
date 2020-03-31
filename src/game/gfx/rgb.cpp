@@ -1,8 +1,7 @@
 /**
  * @file
  *
- * @author CCHyper
- * @author OmniBlade
+ * @author tomsons26
  *
  * @brief Class for holding RGB color model data.
  *
@@ -22,96 +21,95 @@
 RGBClass const RGBClass::BlackColor(RGB_MIN, RGB_MIN, RGB_MIN);
 RGBClass const RGBClass::WhiteColor(RGB_MAX, RGB_MAX, RGB_MAX);
 
-void RGBClass::Adjust(int adjustment, const RGBClass &that)
+void RGBClass::Adjust(int adjust, const RGBClass &that)
 {
-    int tmp;
-
-    tmp = adjustment * (that.m_Red - m_Red);
-    m_Red += (((tmp & 0xFF000000) >> 24) + tmp) >> 8;
-
-    tmp = adjustment * (that.m_Grn - m_Grn);
-    m_Grn += (((tmp & 0xFF000000) >> 24) + tmp) >> 8;
-
-    tmp = adjustment * (that.m_Blu - m_Blu);
-    m_Blu += (((tmp & 0xFF000000) >> 24) + tmp) >> 8;
+    m_Red += adjust * (that.m_Red - m_Red) / 256;
+    m_Grn += adjust * (that.m_Grn - m_Grn) / 256;
+    m_Blu += adjust * (that.m_Blu - m_Blu) / 256;
 }
 
 int const RGBClass::Difference(RGBClass const &that) const
 {
-    int red = m_Red - that.m_Red;
-    int green = m_Grn - that.m_Grn;
-    int blue = m_Grn - that.m_Blu;
+    int red = std::abs(m_Red - that.m_Red);
+    int grn = std::abs(m_Grn - that.m_Grn);
+    int blu = std::abs(m_Blu - that.m_Blu);
 
-    red = std::abs(red);
-    green = std::abs(green);
-    blue = std::abs(blue);
-
-    return blue * blue + green * green + red * red;
+    return red * red + grn * grn + blu * blu;
 }
 
 RGBClass RGBClass::Average(RGBClass const &that) const
 {
     int red = m_Red + that.m_Red;
-    int green = m_Grn + that.m_Grn;
-    int blue = m_Blu + that.m_Blu;
+    int grn = m_Grn + that.m_Grn;
+    int blu = m_Blu + that.m_Blu;
 
-    RGBClass ret((red / 2), (green / 2), (blue / 2));
-
-    return ret;
+    return RGBClass((red / 2), (grn / 2), (blu / 2));
 }
 
 void RGBClass::Set(int index)
 {
-    // DOS I/O stuff, for updating the screen palette directly
-    //__outbyte(0x3C8u, index);
-    //__outbyte(0x3C9u, m_red);
-    //__outbyte(0x3C9u, m_grn);
-    //__outbyte(0x3C9u, m_blu);
-
     PaletteClass::CurrentPalette[index] = *this;
 }
 
 RGBClass::operator HSVClass()
 {
-    int red = Expand_VGA(m_Red);
-    int green = Expand_VGA(m_Grn);
-    int blue = Expand_VGA(m_Blu);
+#define HSV_RED (0 * 256) // red         hue = 0
+#define HSV_YLW (1 * 256) // yellow      hue = 256
+#define HSV_GRN (2 * 256) // green       hue = 512
+#define HSV_CYN (3 * 256) // cyan        hue = 768
+#define HSV_BLU (4 * 256) // blue        hue = 1024
+#define HSV_MAG (5 * 256) // magenta     hue = 1280
+#define HSV_RNG (6 * 256) // range / red hue = 1536 / 0
 
-    int saturation = 0;
-    unsigned hue = 0;
-    int value = std::max(blue, std::max(green, red));
+    int red = 0;//Get_Red();
+    int grn = 0;//Get_Green();
+    int blu = 0;//Get_Blue();
 
-    int min_value = std::min(blue, std::min(green, red));
+    int hue = 0;
 
-    int delta = value - min_value;
+    // Max component value.
+    int val = std::max(blu, std::max(grn, red));
 
-    if (value) {
-        saturation = 255 * (delta) / value;
+    // Min component value.
+    int min_val = std::min(blu, std::min(grn, red));
+
+    // Component range.
+    int range = val - min_val;
+
+    int sat = 0;
+
+    // Compute saturation.
+    if (val > 0) {
+        sat = 255 * range / val;
     }
 
-    if (saturation) {
-        unsigned finalhue;
+    // Compute hue.
+    if (sat > 0) {
+        unsigned int h = range;
+        unsigned int r = 255 * (val - red) / range;
+        unsigned int g = 255 * (val - grn) / range;
+        unsigned int b = 255 * (val - blu) / range;
 
-        if (value == red) {
-            if (min_value == green) {
-                finalhue = (255 * (value - blue) / (value - min_value)) + 1280;
+        if (val == red) {
+            if (min_val == grn) {
+                h = b + HSV_MAG;
             } else {
-                finalhue = 256 - (255 * (value - green) / (value - min_value));
+                h = HSV_YLW - g;
             }
-        } else if (value == green) {
-            if (min_value == blue) {
-                finalhue = (255 * (value - red) / (value - min_value)) + 256;
+        } else if (val == grn) {
+            if (min_val == blu) {
+                h = r + HSV_YLW;
             } else {
-                finalhue = 768 - (255 * (value - blue) / (value - min_value));
+                h = HSV_CYN - b;
             }
-        } else if (min_value == red) {
-            finalhue = (255 * (value - green) / (value - min_value)) + 768;
+        } else if (min_val == red) {
+            h = g + HSV_CYN;
         } else {
-            finalhue = 1280 - (255 * (value - red) / (value - min_value));
+            h = HSV_MAG - r;
         }
 
-        hue = finalhue / 6;
+        hue = h / 6;
     }
 
-    return HSVClass(hue, saturation, value);
+    return HSVClass(hue, sat, val);
 }
