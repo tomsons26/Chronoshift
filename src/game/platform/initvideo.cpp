@@ -16,7 +16,6 @@
 #include "gbuffer.h"
 #include "globals.h"
 #include "ostimer.h"
-#include "rgb.h"
 #include "surfacemonitor.h"
 #include <captainslog.h>
 
@@ -651,14 +650,14 @@ void Set_Video_Palette(void *pal)
     if (pal == nullptr || g_DirectDrawObject == nullptr || g_PaletteSurface == nullptr) {
         return;
     }
-
-    RGBClass *rgb = static_cast<RGBClass *>(pal);
+    uint8_t *entry = static_cast<uint8_t *>(pal);
 
     for (int i = 0; i < 256; ++i) {
-        g_PaletteEntries[i].peRed = rgb[i].Get_Red() << 2;
-        g_PaletteEntries[i].peGreen = rgb[i].Get_Green() << 2;
-        g_PaletteEntries[i].peBlue = rgb[i].Get_Blue() << 2;
+        g_PaletteEntries[i].peRed   = entry[i * 3 + 0] * 4;
+        g_PaletteEntries[i].peGreen = entry[i * 3 + 1] * 4;
+        g_PaletteEntries[i].peBlue  = entry[i * 3 + 2] * 4;
     }
+
 
     if (!_first_palette_set) {
         g_PaletteSurface->SetPalette(g_PalettePtr);

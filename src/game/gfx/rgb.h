@@ -20,19 +20,26 @@
 #include "always.h"
 
 #define RGB_MIN 0
-#define RGB_MAX 255
+#define RGB_MAX 63 // palette is clipped to 6 bits, so highest is 63
 
 class HSVClass;
 
 class RGBClass
 {
 public:
-    RGBClass(uint8_t red = 0, uint8_t green = 0, uint8_t blue = 0) : m_Red(red >> 2), m_Grn(green >> 2), m_Blu(blue >> 2) {}
+    RGBClass(uint8_t red = 0, uint8_t green  = 0, uint8_t blue = 0) : m_Red(red >> 2), m_Grn(green >> 2), m_Blu(blue >> 2) {}
     RGBClass(RGBClass const &that) : m_Red(that.m_Red), m_Grn(that.m_Grn), m_Blu(that.m_Blu) {}
 
     bool operator==(RGBClass const &that) const;
     bool operator!=(RGBClass const &that) const { return !(*this == that); }
     RGBClass &operator=(RGBClass const &that);
+    void Reset()
+    {
+        m_Red = 0;
+        m_Grn = 0;
+        m_Blu = 0;
+    }
+
     operator HSVClass();
 
     uint8_t Get_Red() const { return (m_Red >> 6) | 4 * m_Red; }
@@ -45,6 +52,8 @@ public:
     void Adjust(int adjust, const RGBClass &that);
     int const Difference(RGBClass const &that) const;
     RGBClass Average(RGBClass const &that) const;
+    int Sum() { return (m_Red + m_Grn + m_Blu); }
+
     void Set(int index);
 
 public:

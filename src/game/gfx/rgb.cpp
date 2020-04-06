@@ -61,9 +61,9 @@ RGBClass::operator HSVClass()
 #define HSV_MAG (5 * 256) // magenta     hue = 1280
 #define HSV_RNG (6 * 256) // range / red hue = 1536 / 0
 
-    int red = 0;//Get_Red();
-    int grn = 0;//Get_Green();
-    int blu = 0;//Get_Blue();
+    int red = Get_Red();
+    int grn = Get_Green();
+    int blu = Get_Blue();
 
     int hue = 0;
 

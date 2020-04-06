@@ -366,12 +366,10 @@ BOOL Force_CD_Available(int cd)
         state = g_Mouse->Get_Mouse_State();
         _font = g_FontPtr;
 
-        //if ((((PaletteClass::CurrentPalette[1].Get_Blue() >> 6) | (PaletteClass::CurrentPalette[1].Get_Blue() << 2))
-        //        + ((PaletteClass::CurrentPalette[1].Get_Red() >> 6) | (PaletteClass::CurrentPalette[1].Get_Red() << 2))
-        //        + ((PaletteClass::CurrentPalette[1].Get_Green() >> 6) | (PaletteClass::CurrentPalette[1].Get_Green() << 2)))
-        //    == 0) {
-        //    g_GamePalette.Set();
-        //}
+        // check if shadow color is set or not, if not we assume the palette needs updating.
+        if (PaletteClass::CurrentPalette[1].Sum() == 0) {
+            g_GamePalette.Set();
+        }
 
         g_Keyboard->Clear();
 

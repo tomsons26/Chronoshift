@@ -78,9 +78,9 @@ GraphicBufferClass *Read_PCX_File(const char *filename, PaletteClass *pal, void 
 
                 // Shifts palette to 6bit format used by 1st gen C&C games.
                 for (int i = 0; i < PaletteClass::PALETTE_ENTRIES; ++i) {
-                    entry[i * 3] = entry[i * 3] >> 2;
-                    entry[i * 3 + 1] = entry[i * 3 + 1] >> 2;
-                    entry[i * 3 + 2] = entry[i * 3 + 2] >> 2;
+                    entry[i * 3 + 0] /= 4;
+                    entry[i * 3 + 1] /= 4;
+                    entry[i * 3 + 2] /= 4;
                 }
             }
 
@@ -103,7 +103,7 @@ GraphicBufferClass *Read_PCX_File(const char *filename, PaletteClass *pal, void 
 int Write_PCX_File(FileClass &file, GraphicBufferClass &gbuff, PaletteClass &pal)
 {
     PCX_HEADER header; // the PCX file header
-    PaletteClass tmppal; // temp palette for writing the input palette to the PCX file.
+    int8_t tmppal[768]; // temp palette for writing the input palette to the PCX file.
     bool file_opened = false;
 
     // Create a null header for our PCX file.
@@ -154,16 +154,21 @@ int Write_PCX_File(FileClass &file, GraphicBufferClass &gbuff, PaletteClass &pal
 
     // Fill tmppal with the input palette.
     captainslog_debug("Write_PCX_File() preparing to write image palette.");
+
+    memcpy(tmppal, &pal, sizeof(tmppal));
+    uint8_t *entry = reinterpret_cast<uint8_t *>(tmppal);
+
     for (int i = 0; i < 256; ++i) {
-        captainslog_debug("\tpreparing entry %d of %d", i, 256);
-        //tmppal[i].Set_Red(pal[i].Get_Red() << 2);
-        //tmppal[i].Set_Green(pal[i].Get_Green() << 2);
-        //tmppal[i].Set_Blue(pal[i].Get_Blue() << 2);
+        //captainslog_debug("\tpreparing entry %d of %d", i, 256);
+        entry[i * 3 + 0] *= 4;
+        entry[i * 3 + 1] *= 4;
+        entry[i * 3 + 2] *= 4;
     }
+
 
     // Write the tmppal palette to the file.
     captainslog_debug("Write_PCX_File() writing image palette.");
-    file.Write(&tmppal, sizeof(PaletteClass));
+    file.Write(tmppal, sizeof(tmppal));
 
     // If we opened the file for writing, lets be safe and close it.
     if (file_opened) {
